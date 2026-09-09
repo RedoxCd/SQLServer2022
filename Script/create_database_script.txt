@@ -1,1 +1,42 @@
+-- billet_id has change from INT IDENTITY to BIGINT IDENTITY. More information in the README
+CREATE DATABASE CinemaBilletterie;
+GO
 
+USE CinemaBilletterie;
+GO
+
+CREATE TABLE t_Films (
+    films_id     INT IDENTITY,
+    titre        VARCHAR(200) NOT NULL,
+    annee        INT NOT NULL,
+    genre        VARCHAR(50) NOT NULL,
+    dureeMin     INT NOT NULL,
+    realisateur  VARCHAR(100) NOT NULL,
+    PRIMARY KEY (films_id)
+);
+
+CREATE TABLE t_salles (
+    salles_id  INT IDENTITY,
+    nom        VARCHAR(50) NOT NULL,
+    capacite   SMALLINT NOT NULL,
+    PRIMARY KEY (salles_id)
+);
+
+CREATE TABLE t_seances (
+    seances_id  INT IDENTITY,
+    dateHeure   DATETIME2 NOT NULL,
+    salles_id   INT NOT NULL,
+    films_id    INT NOT NULL,
+    PRIMARY KEY (seances_id),
+    FOREIGN KEY (salles_id) REFERENCES t_salles(salles_id),
+    FOREIGN KEY (films_id) REFERENCES t_Films(films_id)
+);
+
+CREATE TABLE t_billets (
+    billets_id  BIGINT IDENTITY,
+    prix        DECIMAL(5,2) NOT NULL,
+    dateAchat   DATETIME2 NOT NULL,
+    seances_id  INT NOT NULL,
+    PRIMARY KEY (billets_id),
+    FOREIGN KEY (seances_id) REFERENCES t_seances(seances_id)
+);
