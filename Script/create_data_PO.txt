@@ -5,11 +5,12 @@ CREATE OR ALTER PROCEDURE dbo.sp_GenererDonneesCinema
     @NbFilms   INT = 2000,
     @NbSalles  INT = 20,
     @NbSeances INT = 80000,
-    @NbBillets INT = 10000000,
+    @NbBillets INT = 50000000,
     @TailleLot INT = 500000
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON; -- arrête immédiatement la procédure à la première erreur
 
     /* Table utilitaire de génération de volume (créée si absente) */
     IF OBJECT_ID('dbo.Nombres') IS NULL
@@ -91,7 +92,7 @@ END
 GO
 
 /* ---------------------------------------------------------------
-   Exécution avec les valeurs par défaut (10 000 000 billets) :
+   Exécution avec les valeurs par défaut (50 000 000 billets) :
 
    EXEC dbo.sp_GenererDonneesCinema;
 
