@@ -6,6 +6,6 @@ If you have any issues understanding how the database works and how the connecti
 
 ## Script
 ### 1: 
-create_data_base.txt is the script to create the database and the table, it has to be executed before any other script or operations.  
+In the folder "Script", create_data_base.txt is the script to create the database and the table, it has to be executed before any other script or operations.  
 
 __*Disclaimer:*__ Since we are creating around 50 million records at once, the IDENTITY column of the t_billets table might be too small—even though it can hold up to 2.14 billion records. So don't forget to drop the table if you re-execute the script.
