@@ -74,7 +74,8 @@ class Api:
     def _charger_config(self):
         if not CONFIG_PATH.exists():
             raise FileNotFoundError(f"Fichier introuvable : {CONFIG_PATH}")
-        with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+        # utf-8-sig : tolère un BOM (ex: fichier ré-édité avec Notepad sous Windows)
+        with open(CONFIG_PATH, "r", encoding="utf-8-sig") as f:
             return json.load(f)
 
     def _connecter(self):

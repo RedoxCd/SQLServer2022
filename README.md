@@ -20,6 +20,19 @@ utilisée le jour des Portes Ouvertes : vente de billets en direct, incident
 
 ### Préparation (à faire avant l'événement)
 
+**Automatique :** exécuter [install_demo.ps1](install_demo.ps1) (ou double-cliquer
+[install_demo.bat](install_demo.bat)) depuis la racine du dépôt sur la VM. Le
+script crée la base, passe en recovery FULL, génère les 50 millions de
+billets, prend les sauvegardes FULL + DIFF, met à jour `demo_app/config.json`
+et installe les dépendances Python — automatiquement, en une seule commande :
+```powershell
+.\install_demo.ps1 -Server "localhost\SQLEXPRESS" -BackupDir "C:\Demo\Backups"
+```
+Relancer avec `-Force` pour repartir d'une base propre. Voir les commentaires
+en tête du script pour les autres paramètres.
+
+**Manuel** (détail de ce que fait le script ci-dessus) :
+
 1. Exécuter `Script/create_database_script.txt`.
 2. **Passer la base en recovery model FULL** (indispensable pour les sauvegardes
    DIFF et LOG utilisées par la démo) :
