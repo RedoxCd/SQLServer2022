@@ -1,4 +1,54 @@
+IF DB_ID('CinemaBilletterie') IS NOT NULL
+BEGIN
+    ALTER DATABASE CinemaBilletterie SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE CinemaBilletterie;
+END
+GO
+
+CREATE DATABASE CinemaBilletterie;
+GO
+
+ALTER DATABASE CinemaBilletterie SET RECOVERY SIMPLE;
+GO
+
 USE CinemaBilletterie;
+GO
+
+CREATE TABLE t_Films (
+    films_id     INT IDENTITY,
+    titre        VARCHAR(200) NOT NULL,
+    annee        INT NOT NULL,
+    genre        VARCHAR(50) NOT NULL,
+    dureeMin     INT NOT NULL,
+    realisateur  VARCHAR(100) NOT NULL,
+    PRIMARY KEY (films_id)
+);
+
+CREATE TABLE t_salles (
+    salles_id  INT IDENTITY,
+    nom        VARCHAR(50) NOT NULL,
+    capacite   SMALLINT NOT NULL,
+    PRIMARY KEY (salles_id)
+);
+
+CREATE TABLE t_seances (
+    seances_id  INT IDENTITY,
+    dateHeure   DATETIME2 NOT NULL,
+    salles_id   INT NOT NULL,
+    films_id    INT NOT NULL,
+    PRIMARY KEY (seances_id),
+    FOREIGN KEY (salles_id) REFERENCES t_salles(salles_id),
+    FOREIGN KEY (films_id) REFERENCES t_Films(films_id)
+);
+
+CREATE TABLE t_billets (
+    billets_id  INT IDENTITY,
+    prix        DECIMAL(5,2) NOT NULL,
+    dateAchat   DATETIME2 NOT NULL,
+    seances_id  INT NOT NULL,
+    PRIMARY KEY (billets_id),
+    FOREIGN KEY (seances_id) REFERENCES t_seances(seances_id)
+);
 GO
 
 CREATE OR ALTER PROCEDURE dbo.sp_GenererDonneesCinema
@@ -10,9 +60,8 @@ CREATE OR ALTER PROCEDURE dbo.sp_GenererDonneesCinema
 AS
 BEGIN
     SET NOCOUNT ON;
-    SET XACT_ABORT ON; -- arrête immédiatement la procédure à la première erreur
+    SET XACT_ABORT ON;
 
-    /* Table utilitaire de génération de volume (créée si absente) */
     IF OBJECT_ID('dbo.Nombres') IS NULL
     BEGIN
         CREATE TABLE dbo.Nombres (N INT PRIMARY KEY);
@@ -25,12 +74,11 @@ BEGIN
               T2 AS (SELECT 1 AS N FROM T1 A CROSS JOIN T1 B),
               T4 AS (SELECT 1 AS N FROM T2 A CROSS JOIN T2 B),
               T8 AS (SELECT 1 AS N FROM T4 A CROSS JOIN T4 B),
-              T16 AS (SELECT ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS N FROM T8 A CROSS JOIN T8 B)
+              T24 AS (SELECT ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS N FROM T8 A CROSS JOIN T8 B CROSS JOIN T8 C)
         INSERT INTO dbo.Nombres (N)
-        SELECT TOP (@TailleLot) N FROM T16;
+        SELECT TOP (@TailleLot) N FROM T24;
     END
 
-    /* Nettoyage avant régénération (ordre inverse des clés étrangères) */
     DELETE FROM t_billets;
     DELETE FROM t_seances;
     DELETE FROM t_salles;
@@ -41,7 +89,6 @@ BEGIN
     DBCC CHECKIDENT ('t_salles', RESEED, 0);
     DBCC CHECKIDENT ('t_Films', RESEED, 0);
 
-    /* -------- Films -------- */
     INSERT INTO t_Films (titre, annee, genre, dureeMin, realisateur)
     SELECT
         'Film ' + CAST(N AS VARCHAR(10)),
@@ -52,12 +99,10 @@ BEGIN
         'Réalisateur ' + CAST((N % 300) AS VARCHAR(10))
     FROM dbo.Nombres WHERE N <= @NbFilms;
 
-    /* -------- Salles -------- */
     INSERT INTO t_salles (nom, capacite)
     SELECT 'Salle ' + CAST(N AS VARCHAR(5)), 80 + (N % 4) * 40
     FROM dbo.Nombres WHERE N <= @NbSalles;
 
-    /* -------- Séances -------- */
     INSERT INTO t_seances (dateHeure, salles_id, films_id)
     SELECT
         DATEADD(MINUTE, N, '2026-01-01'),
@@ -65,7 +110,6 @@ BEGIN
         1 + (ABS(CHECKSUM(NEWID())) % @NbFilms)
     FROM dbo.Nombres WHERE N <= @NbSeances;
 
-    /* -------- Billets, insérés par lots pour rester maîtrisable -------- */
     DECLARE @i INT = 0;
     WHILE @i < @NbBillets
     BEGIN
@@ -79,10 +123,9 @@ BEGIN
 
         SET @i += @TailleLot;
         PRINT CONCAT('Billets insérés : ', @i, ' / ', @NbBillets);
-        CHECKPOINT; -- limite la croissance du log pendant le chargement
+        CHECKPOINT;
     END
 
-    /* Récapitulatif final */
     SELECT
         (SELECT COUNT(*) FROM t_Films)   AS NbFilmsCrees,
         (SELECT COUNT(*) FROM t_salles)  AS NbSallesCrees,
@@ -91,17 +134,74 @@ BEGIN
 END
 GO
 
-/* ---------------------------------------------------------------
-   Exécution avec les valeurs par défaut (50 000 000 billets) :
+EXEC dbo.sp_GenererDonneesCinema;
+GO
 
-   EXEC dbo.sp_GenererDonneesCinema;
+ALTER DATABASE CinemaBilletterie SET RECOVERY FULL;
+GO
 
-   Ou avec des volumes personnalisés (utile pour un test rapide) :
+BACKUP DATABASE CinemaBilletterie
+TO DISK = 'C:\SQLDemo\Backups\Cinema_FULL.bak'
+WITH INIT, NAME = 'Backup complet initial';
+GO
 
-   EXEC dbo.sp_GenererDonneesCinema
-       @NbFilms = 500,
-       @NbSalles = 10,
-       @NbSeances = 5000,
-       @NbBillets = 100000,
-       @TailleLot = 50000;
-   --------------------------------------------------------------- */
+SELECT COUNT(*) AS NbBillets, SUM(prix) AS RecetteTotale FROM t_billets;
+GO
+
+INSERT INTO t_billets (prix, dateAchat, seances_id)
+SELECT TOP (500)
+    CAST(8 + (ABS(CHECKSUM(NEWID())) % 12) AS DECIMAL(5,2)),
+    SYSDATETIME(),
+    1 + (ABS(CHECKSUM(NEWID())) % 80000)
+FROM dbo.Nombres;
+GO
+
+BACKUP DATABASE CinemaBilletterie
+TO DISK = 'C:\SQLDemo\Backups\Cinema_DIFF.bak'
+WITH DIFFERENTIAL, INIT, NAME = 'Backup différentiel';
+GO
+
+SELECT SYSDATETIME() AS HeureAvantIncident;
+GO
+
+INSERT INTO t_billets (prix, dateAchat, seances_id)
+SELECT TOP (200)
+    CAST(8 + (ABS(CHECKSUM(NEWID())) % 12) AS DECIMAL(5,2)),
+    SYSDATETIME(),
+    1 + (ABS(CHECKSUM(NEWID())) % 80000)
+FROM dbo.Nombres;
+GO
+
+BACKUP LOG CinemaBilletterie
+TO DISK = 'C:\SQLDemo\Backups\Cinema_LOG1.trn'
+WITH INIT, NAME = 'Backup log avant incident';
+GO
+
+DELETE FROM t_billets;
+GO
+
+SELECT COUNT(*) AS NbBillets, SUM(prix) AS RecetteTotale FROM t_billets;
+GO
+
+BACKUP LOG CinemaBilletterie
+TO DISK = 'C:\SQLDemo\Backups\Cinema_LOG_TAIL.trn'
+WITH NORECOVERY, NAME = 'Tail-log backup après incident';
+GO
+
+RESTORE DATABASE CinemaBilletterie
+FROM DISK = 'C:\SQLDemo\Backups\Cinema_FULL.bak'
+WITH NORECOVERY, REPLACE;
+GO
+
+RESTORE DATABASE CinemaBilletterie
+FROM DISK = 'C:\SQLDemo\Backups\Cinema_DIFF.bak'
+WITH NORECOVERY;
+GO
+
+RESTORE LOG CinemaBilletterie
+FROM DISK = 'C:\SQLDemo\Backups\Cinema_LOG1.trn'
+WITH STOPAT = '2026-09-09 10:15:00', RECOVERY;
+GO
+
+SELECT COUNT(*) AS NbBillets, SUM(prix) AS RecetteTotale FROM t_billets;
+GO
