@@ -1,0 +1,387 @@
+:root {
+  --fond: #0e1420;
+  --fond-carte: #161f30;
+  --fond-carte-clair: #1d2942;
+  --bordure: #2a3654;
+  --texte: #eef1f8;
+  --texte-att: #93a0bd;
+  --or: #f0b429;
+  --or-clair: #ffd873;
+  --vert: #2ecc71;
+  --rouge: #e63946;
+  --rouge-clair: #ff6b78;
+  --ombre: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: radial-gradient(circle at top, #16213a 0%, var(--fond) 65%);
+  color: var(--texte);
+  font-family: "Segoe UI", Roboto, Arial, sans-serif;
+  overflow-x: hidden;
+  user-select: none;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* -------------------- Overlay incident -------------------- */
+#incident-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: var(--rouge);
+  opacity: 0;
+  z-index: 50;
+}
+
+#incident-overlay.actif {
+  animation: flash-incident 0.9s ease-out;
+}
+
+@keyframes flash-incident {
+  0%   { opacity: 0.55; }
+  100% { opacity: 0; }
+}
+
+body.tremble {
+  animation: tremble 0.5s ease-in-out;
+}
+
+@keyframes tremble {
+  0%, 100% { transform: translate(0, 0); }
+  20%      { transform: translate(-6px, 3px); }
+  40%      { transform: translate(6px, -3px); }
+  60%      { transform: translate(-4px, 2px); }
+  80%      { transform: translate(4px, -2px); }
+}
+
+/* -------------------- Bannière erreur -------------------- */
+.banniere-erreur {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  background: #4d1620;
+  border-bottom: 1px solid var(--rouge-clair);
+  color: #ffd7da;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 0.95rem;
+}
+
+.banniere-erreur button {
+  background: var(--rouge);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* -------------------- Entête -------------------- */
+.entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 32px;
+  border-bottom: 1px solid var(--bordure);
+}
+
+.entete h1 {
+  font-size: 1.4rem;
+  margin: 0;
+}
+
+.sous-titre {
+  color: var(--texte-att);
+  font-weight: 400;
+  font-size: 1rem;
+}
+
+.statut-connexion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--texte-att);
+}
+
+.point-statut {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--texte-att);
+  display: inline-block;
+  transition: background 0.3s ease;
+}
+
+.point-statut.ok { background: var(--vert); box-shadow: 0 0 8px var(--vert); }
+.point-statut.erreur { background: var(--rouge); box-shadow: 0 0 8px var(--rouge); }
+.point-statut.attente { background: var(--or); box-shadow: 0 0 8px var(--or); }
+
+/* -------------------- Compteur -------------------- */
+.bloc-compteur {
+  text-align: center;
+  padding: 28px 20px 12px;
+}
+
+.compteur {
+  font-size: 6.2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--or-clair);
+  text-shadow: 0 0 40px rgba(240, 180, 41, 0.35);
+  line-height: 1;
+}
+
+.compteur-legende {
+  color: var(--texte-att);
+  font-size: 1.1rem;
+  margin-top: 6px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.compteur.en-cours {
+  animation: pulse-attente 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse-attente {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}
+
+/* -------------------- Actions -------------------- */
+.bloc-actions {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding: 10px 20px 26px;
+}
+
+.bouton {
+  border: none;
+  border-radius: 10px;
+  padding: 14px 26px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+}
+
+.bouton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.bouton:not(:disabled):hover {
+  transform: translateY(-2px);
+}
+
+.bouton-primaire {
+  background: linear-gradient(135deg, var(--or), #d99a1b);
+  color: #1a1300;
+  box-shadow: 0 6px 18px rgba(240, 180, 41, 0.25);
+}
+
+.bouton-danger {
+  background: linear-gradient(135deg, var(--rouge), #a4222c);
+  color: white;
+  box-shadow: 0 6px 18px rgba(230, 57, 70, 0.3);
+}
+
+.bouton-secondaire {
+  background: var(--fond-carte-clair);
+  color: var(--texte);
+  border: 1px solid var(--bordure);
+}
+
+.bouton-etape {
+  background: var(--fond-carte-clair);
+  color: var(--texte);
+  border: 1px solid var(--bordure);
+  padding: 10px 18px;
+  font-size: 0.95rem;
+}
+
+.bouton-etape:not(:disabled):hover {
+  border-color: var(--or);
+}
+
+.bouton-voir-sql {
+  background: transparent;
+  color: var(--texte-att);
+  border: none;
+  padding: 8px 10px;
+  font-size: 0.88rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.bouton-voir-sql:hover {
+  color: var(--or-clair);
+}
+
+.chevron {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.chevron.ouvert {
+  transform: rotate(90deg);
+}
+
+/* -------------------- Restauration -------------------- */
+.bloc-restauration {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 10px 24px 20px;
+}
+
+.bloc-restauration h2 {
+  text-align: center;
+  font-size: 1.15rem;
+  color: var(--texte-att);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  margin-bottom: 14px;
+}
+
+.etapes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.etape {
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: 12px;
+  padding: 14px 18px;
+  transition: border-color 0.3s ease, opacity 0.3s ease;
+}
+
+.etape.terminee {
+  border-color: var(--vert);
+}
+
+.etape.verrouillee {
+  opacity: 0.55;
+}
+
+.etape-entete {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.etape-numero {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  border-radius: 50%;
+  background: var(--fond-carte-clair);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--texte-att);
+  border: 1px solid var(--bordure);
+}
+
+.etape.terminee .etape-numero {
+  background: var(--vert);
+  color: #06210f;
+  border-color: var(--vert);
+}
+
+.etape-info {
+  flex: 1;
+}
+
+.etape-info h3 {
+  margin: 0 0 2px;
+  font-size: 1rem;
+}
+
+.etape-info p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--texte-att);
+}
+
+.etape-badge {
+  font-size: 0.78rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--fond-carte-clair);
+  color: var(--texte-att);
+  white-space: nowrap;
+}
+
+.etape-badge.en-cours {
+  background: rgba(240, 180, 41, 0.15);
+  color: var(--or-clair);
+}
+
+.etape-badge.terminee {
+  background: rgba(46, 204, 113, 0.15);
+  color: var(--vert);
+}
+
+.etape-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding-left: 44px;
+}
+
+.panneau-sql {
+  margin-top: 10px;
+  margin-left: 44px;
+  background: #0a0f1a;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+}
+
+.panneau-sql-meta {
+  font-size: 0.8rem;
+  color: var(--or-clair);
+  margin-bottom: 8px;
+}
+
+.panneau-sql-code {
+  margin: 0;
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  white-space: pre;
+  color: #cbd4e8;
+}
+
+.sql-keyword { color: #7aa2ff; font-weight: 600; }
+.sql-string  { color: #f0b429; }
+.sql-comment { color: #5f6f8f; font-style: italic; }
+.sql-ident   { color: #7dd3a8; }
+
+/* -------------------- Reset -------------------- */
+.bloc-reset {
+  text-align: center;
+  padding: 6px 20px 26px;
+}

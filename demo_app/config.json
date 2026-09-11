@@ -1,0 +1,29 @@
+{
+  "connexion": {
+    "server": "localhost\\SQLEXPRESS",
+    "database": "CinemaBilletterie",
+    "driver": "ODBC Driver 18 for SQL Server",
+    "trusted_connection": true,
+    "user": "",
+    "password": "",
+    "encrypt": false,
+    "trust_server_certificate": true,
+    "timeout_secondes": 30
+  },
+  "sauvegardes": {
+    "full": "C:\\Demo\\Backups\\CinemaBilletterie_FULL.bak",
+    "diff": "C:\\Demo\\Backups\\CinemaBilletterie_DIFF.bak",
+    "tail_log": "C:\\Demo\\Backups\\CinemaBilletterie_TAILLOG.trn"
+  },
+  "restauration": {
+    "deplacer_fichiers": false,
+    "nom_logique_data": "CinemaBilletterie",
+    "nom_logique_log": "CinemaBilletterie_log",
+    "chemin_data": "C:\\Demo\\Data\\CinemaBilletterie.mdf",
+    "chemin_log": "C:\\Demo\\Data\\CinemaBilletterie_log.ldf"
+  },
+  "vente": {
+    "min": 15,
+    "max": 60
+  }
+}

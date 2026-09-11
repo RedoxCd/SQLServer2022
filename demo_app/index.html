@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Démo SQL Server 2022 — Billetterie Cinéma</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="incident-overlay"></div>
+
+  <div id="banniere-erreur" class="banniere-erreur" hidden>
+    <span id="banniere-erreur-texte"></span>
+    <button id="btn-reessayer">Réessayer la connexion</button>
+  </div>
+
+  <header class="entete">
+    <h1>🎬 CinemaBilletterie <span class="sous-titre">— Démo SQL Server 2022</span></h1>
+    <div class="statut-connexion">
+      <span id="point-statut" class="point-statut"></span>
+      <span id="texte-statut">Connexion…</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="bloc-compteur">
+      <div id="compteur" class="compteur">0</div>
+      <div class="compteur-legende">billets en base</div>
+    </section>
+
+    <section class="bloc-actions">
+      <button id="btn-vendre" class="bouton bouton-primaire" disabled>
+        🎟️ Vendre des billets
+      </button>
+      <button id="btn-incident" class="bouton bouton-danger" disabled>
+        ⚠️ Incident
+      </button>
+    </section>
+
+    <section class="bloc-restauration">
+      <h2>Restauration en 3 étapes</h2>
+      <div class="etapes">
+
+        <article class="etape" id="etape-1" data-etape="1">
+          <div class="etape-entete">
+            <span class="etape-numero">1</span>
+            <div class="etape-info">
+              <h3>Sauvegarde COMPLÈTE (FULL)</h3>
+              <p>Sauvegarde du journal (tail-log) + restauration de la dernière sauvegarde complète.</p>
+            </div>
+            <span class="etape-badge" data-badge="1">en attente</span>
+          </div>
+          <div class="etape-actions">
+            <button class="bouton bouton-etape" data-action="restaurer" data-etape="1" disabled>
+              Restaurer étape 1
+            </button>
+            <button class="bouton bouton-voir-sql" data-etape="1" hidden>
+              <span class="chevron">▶</span> Voir le SQL
+            </button>
+          </div>
+          <div class="panneau-sql" data-panneau="1" hidden>
+            <div class="panneau-sql-meta"></div>
+            <pre class="panneau-sql-code"><code data-code="1"></code></pre>
+          </div>
+        </article>
+
+        <article class="etape" id="etape-2" data-etape="2">
+          <div class="etape-entete">
+            <span class="etape-numero">2</span>
+            <div class="etape-info">
+              <h3>Sauvegarde DIFFÉRENTIELLE (DIFF)</h3>
+              <p>Applique les changements survenus depuis la sauvegarde complète.</p>
+            </div>
+            <span class="etape-badge" data-badge="2">en attente</span>
+          </div>
+          <div class="etape-actions">
+            <button class="bouton bouton-etape" data-action="restaurer" data-etape="2" disabled>
+              Restaurer étape 2
+            </button>
+            <button class="bouton bouton-voir-sql" data-etape="2" hidden>
+              <span class="chevron">▶</span> Voir le SQL
+            </button>
+          </div>
+          <div class="panneau-sql" data-panneau="2" hidden>
+            <div class="panneau-sql-meta"></div>
+            <pre class="panneau-sql-code"><code data-code="2"></code></pre>
+          </div>
+        </article>
+
+        <article class="etape" id="etape-3" data-etape="3">
+          <div class="etape-entete">
+            <span class="etape-numero">3</span>
+            <div class="etape-info">
+              <h3>Journal de transactions (LOG + STOPAT)</h3>
+              <p>Rejoue le journal jusqu'à l'instant juste avant l'incident, puis remet la base en ligne.</p>
+            </div>
+            <span class="etape-badge" data-badge="3">en attente</span>
+          </div>
+          <div class="etape-actions">
+            <button class="bouton bouton-etape" data-action="restaurer" data-etape="3" disabled>
+              Restaurer étape 3
+            </button>
+            <button class="bouton bouton-voir-sql" data-etape="3" hidden>
+              <span class="chevron">▶</span> Voir le SQL
+            </button>
+          </div>
+          <div class="panneau-sql" data-panneau="3" hidden>
+            <div class="panneau-sql-meta"></div>
+            <pre class="panneau-sql-code"><code data-code="3"></code></pre>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <section class="bloc-reset">
+      <button id="btn-reinitialiser" class="bouton bouton-secondaire">
+        ↺ Réinitialiser pour le visiteur suivant
+      </button>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
