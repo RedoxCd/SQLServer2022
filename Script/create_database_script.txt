@@ -33,7 +33,7 @@ CREATE TABLE t_seances (
 );
 
 CREATE TABLE t_billets (
-    billets_id  BIGINT IDENTITY,
+    billets_id  INT IDENTITY,
     prix        DECIMAL(5,2) NOT NULL,
     dateAchat   DATETIME2 NOT NULL,
     seances_id  INT NOT NULL,
