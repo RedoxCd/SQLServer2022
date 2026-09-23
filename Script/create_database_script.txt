@@ -1,5 +1,6 @@
 -- billet_id has change from INT IDENTITY to BIGINT IDENTITY. More information in the README
-CREATE DATABASE CinemaBilletterie;
+CREATE DATABASE CinemaBilletterie
+COLLATE Latin1_General_CI_AS;
 GO
 
 USE CinemaBilletterie;
