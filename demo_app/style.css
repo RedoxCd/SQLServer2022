@@ -81,6 +81,10 @@ body.tremble {
   font-size: 0.95rem;
 }
 
+.banniere-erreur[hidden] {
+  display: none;
+}
+
 .banniere-erreur button {
   background: var(--rouge);
   color: white;
