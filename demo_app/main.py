@@ -173,8 +173,11 @@ class Api:
 
     def _get_count(self):
         cursor = self.conn.cursor()
+        # USE et SELECT sont exécutés séparément : combinés dans un seul
+        # execute(), certains drivers ODBC positionnent fetchone() sur le
+        # résultat (vide) du USE au lieu de celui du SELECT.
+        cursor.execute(f"USE [{self.db_name}];")
         cursor.execute(
-            f"USE [{self.db_name}]; "
             "SELECT SUM(p.rows) FROM sys.partitions p "
             "WHERE p.object_id = OBJECT_ID('dbo.t_billets') AND p.index_id IN (0, 1);"
         )
@@ -261,7 +264,8 @@ class Api:
                 return {"success": False, "error": f"Script introuvable : {script}"}
 
             cursor = self.conn.cursor()
-            cursor.execute(f"USE [{self.db_name}]; SELECT SYSDATETIME();")
+            cursor.execute(f"USE [{self.db_name}];")
+            cursor.execute("SELECT SYSDATETIME();")
             point_avant_incident = cursor.fetchone()[0]
             self.incident_stopat = point_avant_incident.strftime(
                 "%Y-%m-%d %H:%M:%S.%f"
