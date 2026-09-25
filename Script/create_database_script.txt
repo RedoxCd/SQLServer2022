@@ -1,43 +1,38 @@
--- billet_id has change from INT IDENTITY to BIGINT IDENTITY. More information in the README
-CREATE DATABASE CinemaBilletterie
+CREATE DATABASE LootTable
 COLLATE Latin1_General_CI_AS;
 GO
 
-USE CinemaBilletterie;
+USE LootTable;
 GO
 
-CREATE TABLE t_Films (
-    films_id     INT IDENTITY,
+CREATE TABLE t_Jeux (
+    jeux_id      INT IDENTITY,
     titre        VARCHAR(200) NOT NULL,
-    annee        INT NOT NULL,
-    genre        VARCHAR(50) NOT NULL,
-    dureeMin     INT NOT NULL,
-    realisateur  VARCHAR(100) NOT NULL,
-    PRIMARY KEY (films_id)
+    plateforme   VARCHAR(50)  NOT NULL,
+    genre        VARCHAR(50)  NOT NULL,
+    prix         DECIMAL(5,2) NOT NULL,
+    editeur      VARCHAR(100) NOT NULL,
+    anneeSortie  INT NOT NULL,
+    PRIMARY KEY (jeux_id)
 );
 
-CREATE TABLE t_salles (
-    salles_id  INT IDENTITY,
-    nom        VARCHAR(50) NOT NULL,
-    capacite   SMALLINT NOT NULL,
-    PRIMARY KEY (salles_id)
+-- Table volumineuse (50 millions de lignes). BIGINT par précaution,
+-- comme pour t_billets dans la version précédente du projet.
+CREATE TABLE t_Joueurs (
+    joueurs_id     BIGINT IDENTITY,
+    pseudo         VARCHAR(50) NOT NULL,
+    dateCreation   DATETIME2 NOT NULL,
+    PRIMARY KEY (joueurs_id)
 );
 
-CREATE TABLE t_seances (
-    seances_id  INT IDENTITY,
-    dateHeure   DATETIME2 NOT NULL,
-    salles_id   INT NOT NULL,
-    films_id    INT NOT NULL,
-    PRIMARY KEY (seances_id),
-    FOREIGN KEY (salles_id) REFERENCES t_salles(salles_id),
-    FOREIGN KEY (films_id) REFERENCES t_Films(films_id)
-);
-
-CREATE TABLE t_billets (
-    billets_id  INT IDENTITY,
-    prix        DECIMAL(5,2) NOT NULL,
-    dateAchat   DATETIME2 NOT NULL,
-    seances_id  INT NOT NULL,
-    PRIMARY KEY (billets_id),
-    FOREIGN KEY (seances_id) REFERENCES t_seances(seances_id)
+CREATE TABLE t_Achats (
+    achats_id    BIGINT IDENTITY,
+    joueurs_id   BIGINT NOT NULL,
+    jeux_id      INT NOT NULL,
+    prixPaye     DECIMAL(5,2) NOT NULL,
+    dateAchat    DATETIME2 NOT NULL,
+    offertPar    VARCHAR(50) NULL,  -- pseudo/nom du visiteur qui offre
+    PRIMARY KEY (achats_id),
+    FOREIGN KEY (joueurs_id) REFERENCES t_Joueurs(joueurs_id),
+    FOREIGN KEY (jeux_id) REFERENCES t_Jeux(jeux_id)
 );
