@@ -1,0 +1,84 @@
+USE LootTable;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sp_GenererDonneesLootTable
+    @NbJeux      INT = 2000,
+    @NbJoueurs   INT = 50000000,
+    @TailleLot   INT = 500000
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    IF OBJECT_ID('dbo.Nombres') IS NULL
+    BEGIN
+        CREATE TABLE dbo.Nombres (N INT PRIMARY KEY);
+    END
+
+    IF (SELECT COUNT(*) FROM dbo.Nombres) < @TailleLot
+    BEGIN
+        TRUNCATE TABLE dbo.Nombres;
+        ;WITH T1 AS (SELECT 1 AS N UNION ALL SELECT 1),
+              T2 AS (SELECT 1 AS N FROM T1 A CROSS JOIN T1 B),
+              T4 AS (SELECT 1 AS N FROM T2 A CROSS JOIN T2 B),
+              T8 AS (SELECT 1 AS N FROM T4 A CROSS JOIN T4 B),
+              T24 AS (SELECT ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS N FROM T8 A CROSS JOIN T8 B CROSS JOIN T8 C)
+        INSERT INTO dbo.Nombres (N)
+        SELECT TOP (@TailleLot) N FROM T24;
+    END
+
+    DELETE FROM t_Achats;
+    DELETE FROM t_Joueurs;
+    DELETE FROM t_Jeux;
+
+    DBCC CHECKIDENT ('t_Achats', RESEED, 0);
+    DBCC CHECKIDENT ('t_Joueurs', RESEED, 0);
+    DBCC CHECKIDENT ('t_Jeux', RESEED, 0);
+
+    -- Catalogue de jeux (léger, quelques milliers de lignes)
+    INSERT INTO t_Jeux (titre, plateforme, genre, prix, editeur, anneeSortie)
+    SELECT
+        'Jeu ' + CAST(N AS VARCHAR(10)),
+        (SELECT p FROM (VALUES ('PC'),('PS5'),('Xbox'),('Switch')) AS P(p)
+           ORDER BY CHECKSUM(NEWID()) OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY),
+        (SELECT g FROM (VALUES ('Action'),('Aventure'),('Sport'),('Course'),('RPG'),('Stratégie')) AS G(g)
+           ORDER BY CHECKSUM(NEWID()) OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY),
+        CAST(19 + (ABS(CHECKSUM(NEWID())) % 60) AS DECIMAL(5,2)),
+        'Éditeur ' + CAST((N % 150) AS VARCHAR(10)),
+        2005 + (N % 22)
+    FROM dbo.Nombres WHERE N <= @NbJeux;
+
+    -- 50 millions de joueurs — pseudo unique par construction :
+    -- on injecte le compteur global (@i + N) dans le pseudo, donc pas
+    -- besoin de contrainte UNIQUE active pendant le chargement (elle
+    -- serait de toute façon désactivée, voir plus bas).
+    DECLARE @i BIGINT = 0;
+    WHILE @i < @NbJoueurs
+    BEGIN
+        INSERT INTO t_Joueurs (pseudo, dateCreation)
+        SELECT
+            (SELECT m FROM (VALUES ('Loup'),('Ombre'),('Draco'),('Nova'),('Pixel'),('Faucon'),('Cobra'),('Titan')) AS M(m)
+               ORDER BY CHECKSUM(NEWID()) OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY)
+            + CAST((@i + N) AS VARCHAR(12)),
+            DATEADD(SECOND, ABS(CHECKSUM(NEWID())) % 100000000, '2020-01-01')
+        FROM dbo.Nombres WHERE N <= @TailleLot;
+
+        SET @i += @TailleLot;
+        PRINT CONCAT('Joueurs insérés : ', @i, ' / ', @NbJoueurs);
+        CHECKPOINT;
+    END
+
+    -- Index unique sur pseudo, créé PUIS désactivé : l'unicité est déjà
+    -- garantie par construction, l'index reste "prêt" mais inactif pour
+    -- la démo (recherche lente en début de démo).
+    CREATE UNIQUE INDEX idx_pseudo ON t_Joueurs(pseudo);
+    ALTER INDEX idx_pseudo ON t_Joueurs DISABLE;
+
+    SELECT
+        (SELECT COUNT(*) FROM t_Jeux)    AS NbJeuxCrees,
+        (SELECT COUNT(*) FROM t_Joueurs) AS NbJoueursCrees;
+END
+GO
+
+EXEC dbo.sp_GenererDonneesLootTable;
+GO
