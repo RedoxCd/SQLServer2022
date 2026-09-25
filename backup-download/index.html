@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Téléchargement — Sauvegarde SQL Server 2022</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="carte">
+    <h1>💾 Sauvegarde SQL Server 2022</h1>
+    <p class="sous-titre">Fichier de sauvegarde de la base de données</p>
+
+    <div class="fichier-info">
+      <span class="fichier-nom">LootTable.bak</span>
+      <span id="fichier-taille" class="fichier-taille">Taille inconnue</span>
+    </div>
+
+    <button id="btn-telecharger" class="bouton">
+      ⬇️ Télécharger
+    </button>
+
+    <div id="progression-conteneur" class="progression-conteneur" hidden>
+      <div id="progression-barre" class="progression-barre"></div>
+    </div>
+    <p id="progression-texte" class="progression-texte" hidden></p>
+
+    <p id="message-erreur" class="message-erreur" hidden></p>
+
+    <a id="lien-secours" class="lien-secours" href="LootTable.bak" download="LootTable.bak" hidden>
+      Le téléchargement ne démarre pas ? Cliquez ici.
+    </a>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
