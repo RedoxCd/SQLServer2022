@@ -15,16 +15,12 @@ CREATE TABLE t_Jeux (
     anneeSortie  INT NOT NULL,
     PRIMARY KEY (jeux_id)
 );
-
--- Table volumineuse (50 millions de lignes). BIGINT par précaution,
--- comme pour t_billets dans la version précédente du projet.
 CREATE TABLE t_Joueurs (
     joueurs_id     BIGINT IDENTITY,
     pseudo         VARCHAR(50) NOT NULL,
     dateCreation   DATETIME2 NOT NULL,
     PRIMARY KEY (joueurs_id)
 );
-
 CREATE TABLE t_Achats (
     achats_id    BIGINT IDENTITY,
     joueurs_id   BIGINT NOT NULL,
