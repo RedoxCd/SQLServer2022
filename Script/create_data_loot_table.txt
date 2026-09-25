@@ -27,15 +27,16 @@ BEGIN
         SELECT TOP (@TailleLot) N FROM T24;
     END
 
-    DELETE FROM t_Achats;
-    DELETE FROM t_Joueurs;
-    DELETE FROM t_Jeux;
+    DELETE FROM t_achats;
+    DELETE FROM t_joueur;
+    DELETE FROM t_jeux;
 
-    DBCC CHECKIDENT ('t_Achats', RESEED, 0);
-    DBCC CHECKIDENT ('t_Joueurs', RESEED, 0);
-    DBCC CHECKIDENT ('t_Jeux', RESEED, 0);
+    DBCC CHECKIDENT ('t_achats', RESEED, 0);
+    DBCC CHECKIDENT ('t_joueur', RESEED, 0);
+    DBCC CHECKIDENT ('t_jeux', RESEED, 0);
 
-    INSERT INTO t_Jeux (titre, plateforme, genre, prix, editeur, anneeSortie)
+    -- Catalogue de jeux
+    INSERT INTO t_jeux (titre, plateforme, genre, prix, editeur, anneeSortie)
     SELECT
         'Jeu ' + CAST(N AS VARCHAR(10)),
         (SELECT p FROM (VALUES ('PC'),('PS5'),('Xbox'),('Switch')) AS P(p)
@@ -47,10 +48,11 @@ BEGIN
         2005 + (N % 22)
     FROM dbo.Nombres WHERE N <= @NbJeux;
 
-    DECLARE @i BIGINT = 0;
+    -- 50 millions de joueurs
+    DECLARE @i INT = 0;
     WHILE @i < @NbJoueurs
     BEGIN
-        INSERT INTO t_Joueurs (pseudo, dateCreation)
+        INSERT INTO t_joueur (pseudo, dateCreation)
         SELECT
             (SELECT m FROM (VALUES ('Loup'),('Ombre'),('Draco'),('Nova'),('Pixel'),('Faucon'),('Cobra'),('Titan')) AS M(m)
                ORDER BY CHECKSUM(NEWID()) OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY)
@@ -63,12 +65,24 @@ BEGIN
         CHECKPOINT;
     END
 
-    CREATE UNIQUE INDEX idx_pseudo ON t_Joueurs(pseudo);
-    ALTER INDEX idx_pseudo ON t_Joueurs DISABLE;
+    CREATE UNIQUE INDEX idx_pseudo ON t_joueur(pseudo);
+    ALTER INDEX idx_pseudo ON t_joueur DISABLE;
+
+    -- Quelques achats de départ pour peupler t_achats (optionnel,
+    -- utile pour tester la démo avant le jour J)
+    INSERT INTO t_achats (jeux_id, joueur_id, prixPaye, dateAchat, offertPar)
+    SELECT TOP (1000)
+        1 + (ABS(CHECKSUM(NEWID())) % @NbJeux),
+        joueur_id,
+        CAST(19 + (ABS(CHECKSUM(NEWID())) % 60) AS DECIMAL(5,2)),
+        DATEADD(SECOND, ABS(CHECKSUM(NEWID())) % 5000000, '2026-01-01'),
+        NULL
+    FROM t_joueur ORDER BY NEWID();
 
     SELECT
-        (SELECT COUNT(*) FROM t_Jeux)    AS NbJeuxCrees,
-        (SELECT COUNT(*) FROM t_Joueurs) AS NbJoueursCrees;
+        (SELECT COUNT(*) FROM t_jeux)   AS NbJeuxCrees,
+        (SELECT COUNT(*) FROM t_joueur) AS NbJoueursCrees,
+        (SELECT COUNT(*) FROM t_achats) AS NbAchatsCrees;
 END
 GO
 
