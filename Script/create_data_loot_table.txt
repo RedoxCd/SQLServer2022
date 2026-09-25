@@ -35,7 +35,6 @@ BEGIN
     DBCC CHECKIDENT ('t_Joueurs', RESEED, 0);
     DBCC CHECKIDENT ('t_Jeux', RESEED, 0);
 
-    -- Catalogue de jeux (léger, quelques milliers de lignes)
     INSERT INTO t_Jeux (titre, plateforme, genre, prix, editeur, anneeSortie)
     SELECT
         'Jeu ' + CAST(N AS VARCHAR(10)),
@@ -48,10 +47,6 @@ BEGIN
         2005 + (N % 22)
     FROM dbo.Nombres WHERE N <= @NbJeux;
 
-    -- 50 millions de joueurs — pseudo unique par construction :
-    -- on injecte le compteur global (@i + N) dans le pseudo, donc pas
-    -- besoin de contrainte UNIQUE active pendant le chargement (elle
-    -- serait de toute façon désactivée, voir plus bas).
     DECLARE @i BIGINT = 0;
     WHILE @i < @NbJoueurs
     BEGIN
@@ -68,9 +63,6 @@ BEGIN
         CHECKPOINT;
     END
 
-    -- Index unique sur pseudo, créé PUIS désactivé : l'unicité est déjà
-    -- garantie par construction, l'index reste "prêt" mais inactif pour
-    -- la démo (recherche lente en début de démo).
     CREATE UNIQUE INDEX idx_pseudo ON t_Joueurs(pseudo);
     ALTER INDEX idx_pseudo ON t_Joueurs DISABLE;
 
