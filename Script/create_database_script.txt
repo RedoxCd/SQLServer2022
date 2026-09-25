@@ -5,7 +5,7 @@ GO
 USE LootTable;
 GO
 
-CREATE TABLE t_Jeux (
+CREATE TABLE t_jeux (
     jeux_id      INT IDENTITY,
     titre        VARCHAR(200) NOT NULL,
     plateforme   VARCHAR(50)  NOT NULL,
@@ -15,20 +15,22 @@ CREATE TABLE t_Jeux (
     anneeSortie  INT NOT NULL,
     PRIMARY KEY (jeux_id)
 );
-CREATE TABLE t_Joueurs (
-    joueurs_id     BIGINT IDENTITY,
+
+CREATE TABLE t_joueur (
+    joueur_id      INT IDENTITY,
     pseudo         VARCHAR(50) NOT NULL,
     dateCreation   DATETIME2 NOT NULL,
-    PRIMARY KEY (joueurs_id)
+    PRIMARY KEY (joueur_id)
 );
-CREATE TABLE t_Achats (
-    achats_id    BIGINT IDENTITY,
-    joueurs_id   BIGINT NOT NULL,
-    jeux_id      INT NOT NULL,
-    prixPaye     DECIMAL(5,2) NOT NULL,
-    dateAchat    DATETIME2 NOT NULL,
-    offertPar    VARCHAR(50) NULL,  -- pseudo/nom du visiteur qui offre
+
+CREATE TABLE t_achats (
+    achats_id   INT IDENTITY,
+    jeux_id     INT NOT NULL,
+    joueur_id   INT NOT NULL,
+    prixPaye    DECIMAL(5,2) NOT NULL,
+    dateAchat   DATETIME2 NOT NULL,
+    offertPar   VARCHAR(50) NULL,
     PRIMARY KEY (achats_id),
-    FOREIGN KEY (joueurs_id) REFERENCES t_Joueurs(joueurs_id),
-    FOREIGN KEY (jeux_id) REFERENCES t_Jeux(jeux_id)
+    FOREIGN KEY (jeux_id) REFERENCES t_jeux(jeux_id),
+    FOREIGN KEY (joueur_id) REFERENCES t_joueur(joueur_id)
 );
