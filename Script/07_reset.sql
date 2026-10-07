@@ -14,7 +14,7 @@ ALTER DATABASE LootTable SET RECOVERY FULL;
 GO
 -- Nouveau FULL : point de départ de la chaîne FULL/DIFF/LOG du prochain visiteur
 BACKUP DATABASE LootTable
-TO DISK = N'C:\LootTable\Backup\LootTable_FULL.bak' WITH INIT, FORMAT, COMPRESSION, CHECKSUM, STATS = 20;
+TO DISK = N'C:\LootTable\Backup\LootTable_FULL.bak' WITH INIT, FORMAT, CHECKSUM, STATS = 20;
 GO
 -- Contrôle : l'index doit être désactivé (is_disabled = 1) et t_achats vide
 USE LootTable;
