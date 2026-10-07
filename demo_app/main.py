@@ -78,6 +78,7 @@ SQL_SCRIPTS = {
 
 TYPES_RESTAURATION = {"D": "FULL", "I": "DIFF", "L": "LOG"}
 LONGUEUR_PSEUDO_MAX = 50
+MESSAGE_BASE_INTROUVABLE = "Base introuvable : lancez d'abord l'installateur"
 
 
 def base_dir() -> Path:
@@ -155,6 +156,7 @@ class Api:
 
         try:
             self._conn = self._nouvelle_connexion()
+            self.erreur_demarrage = self._message_base_introuvable()
         except Exception as e:
             self.erreur_demarrage = self._message_erreur(e)
 
@@ -206,11 +208,26 @@ class Api:
                     except pyodbc.Error:
                         pass
                 self._conn = self._nouvelle_connexion()
-                self.erreur_demarrage = None
+                self.erreur_demarrage = self._message_base_introuvable()
             except Exception as e:
                 self.erreur_demarrage = self._message_erreur(e)
                 return {"success": False, "error": self.erreur_demarrage}
         return self.get_status()
+
+    def _message_base_introuvable(self):
+        """Message à afficher si la base n'a jamais été installée, sinon None.
+        Une base absente mais ayant un historique de sauvegardes (détachée par
+        l'incident de la démo) n'est PAS « introuvable » : c'est la panne, que
+        « Restaurer » répare."""
+        try:
+            if self._requete("SELECT DB_ID(?);", self._db)[0][0] is not None:
+                return None
+            nb = self._requete(
+                "SELECT COUNT(*) FROM msdb.dbo.backupset WHERE database_name = ?;", self._db
+            )[0][0]
+            return MESSAGE_BASE_INTROUVABLE if nb == 0 else None
+        except pyodbc.Error:
+            return None  # msdb illisible : on laisse l'appli démarrer normalement
 
     def _message_erreur(self, err):
         if isinstance(err, pyodbc.Error) and err.args:
