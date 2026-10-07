@@ -6,6 +6,25 @@ The demo uses the **LootTable** database (a video game shop): 50 million players
 ## Modeling
 If you have any issues understanding how the database works and how the connections between tables are made, you can check **Modelisation/LootTable.loo**. It will open Looping, which is the modeling software that I used. Both MCD and MLD (Merise method) can be checked.
 
+## Installation en un clic
+Pour préparer la base sans lancer les scripts à la main, utilise l'installateur, **puis** l'activité :
+
+1. Double-clique sur `lancer_installateur.bat` (ou `python installer_app/main.py`).
+2. Vérifie les prérequis affichés (✔ / ⚠ / ✘) : SQL Server joignable, édition, dossiers `C:\LootTable\Data` et `C:\LootTable\Backup` (créés au besoin), **25 Go libres**, base déjà existante (une confirmation est demandée avant de l'écraser).
+3. Clique sur **« Créer la base »**. L'installateur exécute, dans l'ordre, `01_create_database.sql`, `02_generate_data.sql`, `03_golden_backup.sql` puis `07_reset.sql` (environ **15 à 30 minutes** ; étape en cours, temps écoulé et progression des joueurs affichés). En cas d'erreur, le message SQL complet est affiché avec un bouton « Réessayer ».
+4. À la fin, un contrôle automatique affiche « Prêt pour l'activité » (50 000 000 joueurs, 42 jeux, `idx_pseudo` désactivé, `LootTable_GOLDEN.bak` et `LootTable_FULL.bak` présents). Le bouton « Vérifier l'installation » refait ce contrôle sans rien modifier.
+5. Lance l'activité avec `lancer_activite.bat` (ou `python demo_app/main.py`). Si la base n'est pas installée, elle affiche « Base introuvable : lancez d'abord l'installateur ».
+
+Les réglages (serveur, dossier **Script/**, dossiers de données et de sauvegardes, espace minimum) sont dans `installer_app/config.json`. `python installer_app/smoke_test.py` lance les vérifications sans rien créer.
+
+Les sauvegardes ne sont **pas compressées** (SQL Server Express ne supporte pas `COMPRESSION`) : chaque `.bak` pèse 3 à 4 Go.
+
+## Sur un autre PC (Sébeillon)
+1. Cloner le dépôt : `git clone https://github.com/RedoxCd/SQLServer2022.git`
+2. Installer **Python 3** et l'**ODBC Driver 18 for SQL Server**, puis `pip install -r installer_app/requirements.txt` (identique à `demo_app/requirements.txt`).
+3. Vérifier le nom du serveur dans `installer_app/config.json` et `demo_app/config.json` (par défaut `localhost\SQLEXPRESS`).
+4. Lancer `lancer_installateur.bat` : **25 Go libres** sont requis sur le disque. Puis `lancer_activite.bat`.
+
 ## Script
 Everything lives in the **Script/** folder. Create `C:\LootTable\Backup` (write access for the SQL Server service account) before starting, then run in this order:
 
