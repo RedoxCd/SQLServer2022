@@ -1,0 +1,23 @@
+{
+  "connexion": {
+    "server": "localhost\\SQLEXPRESS",
+    "database": "LootTable",
+    "driver": "ODBC Driver 18 for SQL Server",
+    "trusted_connection": true,
+    "user": "",
+    "password": "",
+    "encrypt": false,
+    "trust_server_certificate": true,
+    "timeout_secondes": 30
+  },
+  "scripts": {
+    "dossier": "../Script"
+  },
+  "sauvegardes": {
+    "dossier": "C:\\LootTable\\Backup"
+  },
+  "donnees": {
+    "dossier": "C:\\LootTable\\Data"
+  },
+  "espace_libre_minimum_go": 25
+}

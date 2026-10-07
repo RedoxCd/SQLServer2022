@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>LootTable — Installateur</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="banniere-erreur" class="banniere-erreur" hidden>
+    <span id="banniere-erreur-texte"></span>
+    <button id="btn-fermer-banniere">Fermer</button>
+  </div>
+
+  <header class="entete">
+    <div class="logo" aria-label="LootTable">
+      <span class="logo-loot">LOOT</span><span class="logo-table">[TABLE]</span>
+    </div>
+    <div class="statut-connexion">
+      <span id="point-statut" class="point-statut"></span>
+      <span id="texte-statut">Vérification…</span>
+    </div>
+  </header>
+
+  <main>
+    <h1>Installation de la démo</h1>
+    <p class="intro">
+      Ce programme prépare la base de données de l'activité en un clic : il crée la base LootTable,
+      y charge 50 millions de joueurs, puis fait les sauvegardes dont l'activité a besoin.
+    </p>
+
+    <section class="bloc" id="bloc-prerequis">
+      <h2>Avant de commencer</h2>
+      <ul id="liste-verifs" class="liste-verifs"></ul>
+    </section>
+
+    <p class="avertissement" id="avertissement-duree">
+      Durée de l'opération : environ <strong>15 à 30 minutes</strong>. Ne fermez pas cette fenêtre
+      et laissez l'ordinateur allumé.
+    </p>
+
+    <div class="actions">
+      <button id="btn-creer" class="bouton bouton-primaire" disabled>Créer la base</button>
+      <button id="btn-verifier" class="bouton">Vérifier l'installation</button>
+      <button id="btn-reverifier" class="bouton bouton-discret">Relancer les vérifications</button>
+    </div>
+
+    <section class="bloc" id="bloc-progression" hidden>
+      <h2 id="progression-titre">Installation en cours</h2>
+      <p class="chrono-global">Temps écoulé : <strong id="temps-ecoule">0:00</strong></p>
+      <ol id="liste-etapes" class="liste-etapes"></ol>
+    </section>
+
+    <section class="bloc" id="bloc-resultat" hidden>
+      <h2 id="resultat-titre"></h2>
+      <p id="resultat-intro" class="intro"></p>
+      <ul id="liste-controles" class="liste-verifs"></ul>
+      <pre id="resultat-erreur" class="erreur-sql" hidden></pre>
+      <ul id="liste-durees" class="liste-durees" hidden></ul>
+      <div class="actions">
+        <button id="btn-reessayer" class="bouton bouton-primaire" hidden>Réessayer</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Confirmation avant d'écraser une base existante -->
+  <div id="modale" class="modale" hidden>
+    <div class="modale-carte" role="dialog" aria-modal="true" aria-labelledby="modale-titre">
+      <h2 id="modale-titre">Attention</h2>
+      <p id="modale-texte"></p>
+      <div class="actions">
+        <button id="btn-modale-annuler" class="bouton">Annuler</button>
+        <button id="btn-modale-confirmer" class="bouton bouton-primaire">Oui, supprimer et recréer</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
