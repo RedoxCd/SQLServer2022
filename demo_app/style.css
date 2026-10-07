@@ -495,9 +495,9 @@ body[data-ecran="panne"] .point-statut {
 .panneau-animateur {
   position: fixed;
   right: 16px;
-  bottom: 16px;
+  top: 100px;
   width: 340px;
-  max-height: 70vh;
+  max-height: calc(100vh - 100px - 36vh);
   overflow-y: auto;
   z-index: 40;
   background: var(--blanc);
@@ -551,3 +551,70 @@ body[data-ecran="panne"] .point-statut {
   padding: 4px 0;
   border-top: 1px solid var(--gris-clair);
 }
+
+/* -------------------- Commande SQL affichée à l'écran -------------------- */
+.bloc-sql {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  border: 2px solid var(--noir);
+  background: var(--noir);
+  color: var(--blanc);
+}
+
+body[data-ecran="panne"] .bloc-sql {
+  border-color: var(--blanc);
+}
+
+body:has(#bloc-sql:not([hidden])) main {
+  padding-bottom: 42vh;
+}
+
+.bloc-sql[hidden] {
+  display: none;
+}
+
+.bloc-sql-entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 14px;
+  border-bottom: 2px solid var(--blanc);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.bloc-sql-entete button {
+  background: var(--noir);
+  color: var(--blanc);
+  border: 2px solid var(--blanc);
+  padding: 4px 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.bloc-sql pre {
+  margin: 0;
+  padding: 14px 16px;
+  max-height: 30vh;
+  overflow: auto;
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  user-select: text;
+}
+
+.bloc-sql.replie pre {
+  display: none;
+}
+
+.bloc-sql.replie .bloc-sql-entete {
+  border-bottom: none;
+}
+
+.sql-keyword { font-weight: 700; }
+.sql-string  { text-decoration: underline; text-underline-offset: 3px; }
+.sql-comment { color: #aaa; font-style: italic; }

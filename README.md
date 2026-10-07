@@ -52,3 +52,7 @@ Settings are in `demo_app/config.json`:
 Host buttons (« Activer l'index », « Restaurer », « Reset ») are hidden: press **Ctrl+Shift+L**, or click the logo 5 times quickly, to show or hide the host panel.
 
 `demo_app/smoke_test.py` plays the whole scenario without the interface and prints the duration of each step. It really runs the scripts (detach, restore, reset): use it only on the demo database, with the app closed (`python demo_app/smoke_test.py`).
+
+Each step shows the SQL command being executed at the bottom of the screen (« Commande SQL »), so the host can explain it to the visitor. The app queries are in `SQL_AFFICHE` (`main.py`); the host scripts are read from **Script/**. The cause of the outage (`05_incident.sql`) is never displayed.
+
+`demo_app/demo_hors_ligne.html` is a standalone version with no database, to try the activity in any browser. It is generated: after changing `index.html`, `style.css`, `app.js` or `mock_api.js`, run `python demo_app/build_hors_ligne.py`.
