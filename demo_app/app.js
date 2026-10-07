@@ -1,74 +1,103 @@
 (() => {
   "use strict";
 
-  const DUREE_ANIMATION_MS = 900;
-  const INTERVALLE_POLLING_MS = 4000;
+  const INTERVALLE_POLLING_MS = 3000;
+  const DELAI_RECHERCHE_JEU_MS = 250;
+  const CLICS_LOGO_ANIMATEUR = 5;
 
+  const $ = (id) => document.getElementById(id);
   const el = {
-    overlay: document.getElementById("incident-overlay"),
-    banniereErreur: document.getElementById("banniere-erreur"),
-    banniereErreurTexte: document.getElementById("banniere-erreur-texte"),
-    btnReessayer: document.getElementById("btn-reessayer"),
-    pointStatut: document.getElementById("point-statut"),
-    texteStatut: document.getElementById("texte-statut"),
-    compteur: document.getElementById("compteur"),
-    compteurLegende: document.querySelector(".compteur-legende"),
-    btnVendre: document.getElementById("btn-vendre"),
-    btnIncident: document.getElementById("btn-incident"),
-    btnReinitialiser: document.getElementById("btn-reinitialiser"),
+    overlay: $("incident-overlay"),
+    banniereErreur: $("banniere-erreur"),
+    banniereErreurTexte: $("banniere-erreur-texte"),
+    btnReessayer: $("btn-reessayer"),
+    pointStatut: $("point-statut"),
+    texteStatut: $("texte-statut"),
+    logo: $("logo"),
+    // catalogue
+    champJeu: $("champ-jeu"),
+    catalogueInfo: $("catalogue-info"),
+    listeJeux: $("liste-jeux"),
+    // ami
+    recapJeu: $("recap-jeu"),
+    champVisiteur: $("champ-visiteur"),
+    champAmi: $("champ-ami"),
+    amiErreur: $("ami-erreur"),
+    btnRetourCatalogue: $("btn-retour-catalogue"),
+    btnOffrir: $("btn-offrir"),
+    // recherche
+    rechercheTitre: $("recherche-titre"),
+    champRecherche: $("champ-recherche"),
+    btnRechercher: $("btn-rechercher"),
+    chronoAvant: $("chrono-avant"),
+    chronoApres: $("chrono-apres"),
+    valeurAvant: $("valeur-avant"),
+    valeurApres: $("valeur-apres"),
+    rapport: $("chrono-rapport"),
+    rechercheMessage: $("recherche-message"),
+    btnRelancer: $("btn-relancer"),
+    btnOk: $("btn-ok"),
+    // panne / reveal / attente
+    panneMessage: $("panne-message"),
+    panneChrono: $("panne-chrono"),
+    revealAchat: $("reveal-achat"),
+    revealDurees: $("reveal-durees"),
+    attenteTitre: $("attente-titre"),
+    attenteMessage: $("attente-message"),
+    attenteChrono: $("attente-chrono"),
+    // animateur
+    panneau: $("panneau-animateur"),
+    animStatut: $("anim-statut"),
+    animJournal: $("anim-journal"),
+    btnFermerAnim: $("btn-fermer-anim"),
+    btnIndex: $("btn-index"),
+    btnRestaurer: $("btn-restaurer"),
+    btnReset: $("btn-reset"),
   };
 
   const etat = {
-    total: 0,
-    etapeMaxTerminee: 0,
-    incidentActif: false,
+    ecran: "attente",
+    jeu: null,
+    visiteur: "",
+    ami: "",
+    avantMs: null,
+    apresMs: null,
+    indexActif: false, // idx_pseudo reconstruit
     enCours: false, // une action est en vol, on verrouille les boutons
+    operation: null, // opération serveur en cours (index, reset...), vue par le polling
+    sauvegarde: null,
+    confirmationReset: null,
+    sequenceJeux: 0,
     pollHandle: null,
+    chronoHandle: null,
   };
 
   // ------------------------------------------------------------------ //
   // Utilitaires
   // ------------------------------------------------------------------ //
-  function formatNombre(n) {
-    return Math.round(n).toLocaleString("fr-FR");
+  function api() {
+    return window.pywebview.api;
   }
 
-  function animerCompteur(depuis, vers) {
-    const debut = performance.now();
-    function frame(maintenant) {
-      const t = Math.min(1, (maintenant - debut) / DUREE_ANIMATION_MS);
-      const t2 = 1 - Math.pow(1 - t, 3);
-      const valeur = depuis + (vers - depuis) * t2;
-      el.compteur.textContent = formatNombre(valeur);
-      if (t < 1) requestAnimationFrame(frame);
-    }
-    requestAnimationFrame(frame);
+  function formatDuree(ms) {
+    if (ms < 1000) return `${Math.round(ms)} ms`;
+    return `${(ms / 1000).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} s`;
   }
 
-  function majCompteur(nouveauTotal) {
-    animerCompteur(etat.total, nouveauTotal);
-    etat.total = nouveauTotal;
+  function formatMmSs(ms) {
+    const s = Math.floor(ms / 1000);
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
   }
 
-  function highlightSql(sql) {
-    const echap = (s) =>
-      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const motif =
-      /(--[^\n]*)|(N?'[^']*')|(\[[^\]]*\])|(\b(?:USE|GO|ALTER|DATABASE|SET|SINGLE_USER|MULTI_USER|WITH|ROLLBACK|IMMEDIATE|BACKUP|LOG|RESTORE|FROM|DISK|TO|NORECOVERY|RECOVERY|REPLACE|MOVE|STOPAT|INIT|DELETE|TRUNCATE|TABLE|INSERT|INTO|VALUES|SELECT|WHERE|AND|OR|ORDER|BY|TOP)\b)/gi;
-    let sortie = "";
-    let dernier = 0;
-    let m;
-    while ((m = motif.exec(sql)) !== null) {
-      sortie += echap(sql.slice(dernier, m.index));
-      const [complet, commentaire, chaine, ident, motCle] = m;
-      if (commentaire) sortie += `<span class="sql-comment">${echap(commentaire)}</span>`;
-      else if (chaine) sortie += `<span class="sql-string">${echap(chaine)}</span>`;
-      else if (ident) sortie += `<span class="sql-ident">${echap(ident)}</span>`;
-      else if (motCle) sortie += `<span class="sql-keyword">${echap(motCle)}</span>`;
-      dernier = m.index + complet.length;
-    }
-    sortie += echap(sql.slice(dernier));
-    return sortie;
+  function formatPrix(prix) {
+    return prix.toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
+  }
+
+  function creer(tag, classe, texte) {
+    const n = document.createElement(tag);
+    if (classe) n.className = classe;
+    if (texte !== undefined) n.textContent = texte;
+    return n;
   }
 
   function afficherErreur(message) {
@@ -85,105 +114,456 @@
     el.texteStatut.textContent = texte;
   }
 
-  function verrouillerActionsPrincipales(verrouille) {
-    if (!etat.incidentActif) {
-      el.btnVendre.disabled = verrouille;
-    }
-    el.btnIncident.disabled = verrouille || etat.incidentActif;
+  function journal(texte) {
+    const li = creer("li", "", `${new Date().toLocaleTimeString("fr-FR")} — ${texte}`);
+    el.animJournal.prepend(li);
+  }
+
+  function afficherEcran(nom) {
+    etat.ecran = nom;
+    document.body.dataset.ecran = nom;
+    majBoutons();
+  }
+
+  /** Chrono « mm:ss » qui défile pendant une opération longue (reset, restauration). */
+  function demarrerChrono(cible) {
+    arreterChrono();
+    const debut = performance.now();
+    cible.hidden = false;
+    cible.textContent = "0:00";
+    etat.chronoHandle = setInterval(() => {
+      cible.textContent = formatMmSs(performance.now() - debut);
+    }, 500);
+  }
+
+  function arreterChrono() {
+    if (etat.chronoHandle) clearInterval(etat.chronoHandle);
+    etat.chronoHandle = null;
   }
 
   // ------------------------------------------------------------------ //
-  // Étapes de restauration (UI)
+  // Panneau animateur (caché : Ctrl+Maj+L ou 5 clics rapides sur le logo)
   // ------------------------------------------------------------------ //
-  function elementsEtape(n) {
-    return {
-      article: document.getElementById(`etape-${n}`),
-      badge: document.querySelector(`[data-badge="${n}"]`),
-      boutonRestaurer: document.querySelector(`[data-action="restaurer"][data-etape="${n}"]`),
-      boutonVoirSql: document.querySelector(`.bouton-voir-sql[data-etape="${n}"]`),
-      panneau: document.querySelector(`[data-panneau="${n}"]`),
-      code: document.querySelector(`[data-code="${n}"]`),
-      meta: document.querySelector(`[data-panneau="${n}"] .panneau-sql-meta`),
+  function basculerPanneau() {
+    el.panneau.hidden = !el.panneau.hidden;
+  }
+
+  function majBoutons() {
+    const libre = !etat.enCours && !etat.operation;
+    el.btnIndex.disabled = !(libre && etat.ecran === "recherche" && !etat.indexActif);
+    el.btnRestaurer.disabled = !(libre && etat.ecran === "panne");
+    el.btnReset.disabled = !libre;
+    el.btnRechercher.disabled = etat.enCours || !!etat.operation;
+    el.btnRelancer.disabled = etat.enCours || !!etat.operation;
+    el.btnOk.disabled = etat.enCours || !!etat.operation;
+  }
+
+  function majStatutAnimateur() {
+    const morceaux = [];
+    const libelles = {
+      index: "Activation de l'index en cours…",
+      incident: "Incident en cours…",
+      restauration: "Restauration en cours…",
+      reset: "Réinitialisation en cours (1 à 2 min)…",
     };
-  }
-
-  function reinitialiserEtapesUI() {
-    // Les 3 étapes restent verrouillées tant qu'aucun incident n'a été
-    // déclenché : declencherIncident() déverrouille ensuite l'étape 1.
-    for (let n = 1; n <= 3; n++) {
-      const e = elementsEtape(n);
-      e.article.classList.remove("terminee");
-      e.article.classList.add("verrouillee");
-      e.badge.textContent = "en attente";
-      e.badge.className = "etape-badge";
-      e.boutonRestaurer.disabled = true;
-      e.boutonVoirSql.hidden = true;
-      e.panneau.hidden = true;
-      e.code.innerHTML = "";
-      e.meta.textContent = "";
-      const chevron = e.boutonVoirSql.querySelector(".chevron");
-      if (chevron) chevron.classList.remove("ouvert");
-    }
-  }
-
-  function deverrouillerEtape(n) {
-    const e = elementsEtape(n);
-    e.article.classList.remove("verrouillee");
-    e.boutonRestaurer.disabled = false;
-  }
-
-  function marquerEtapeEnCours(n) {
-    const e = elementsEtape(n);
-    e.badge.textContent = "en cours…";
-    e.badge.className = "etape-badge en-cours";
-    e.boutonRestaurer.disabled = true;
-  }
-
-  function marquerEtapeTerminee(n, sql, dureeMs) {
-    const e = elementsEtape(n);
-    e.article.classList.remove("verrouillee");
-    e.article.classList.add("terminee");
-    e.badge.textContent = "terminée";
-    e.badge.className = "etape-badge terminee";
-    e.boutonVoirSql.hidden = false;
-    e.code.innerHTML = highlightSql(sql);
-    e.meta.textContent = `Temps d'exécution : ${dureeMs} ms`;
-
-    if (n < 3) deverrouillerEtape(n + 1);
-  }
-
-  function marquerEtapeErreur(n, message) {
-    const e = elementsEtape(n);
-    e.badge.textContent = "échec";
-    e.badge.className = "etape-badge";
-    e.boutonRestaurer.disabled = false;
-    afficherErreur(`Étape ${n} : ${message}`);
+    if (etat.operation) morceaux.push(libelles[etat.operation] || etat.operation);
+    const s = etat.sauvegarde;
+    if (s && s.etat === "en_cours") morceaux.push("Sauvegarde DIFF en arrière-plan…");
+    else if (s && s.etat === "ok") morceaux.push(`Sauvegarde DIFF terminée (${formatDuree(s.duree_ms)}).`);
+    else if (s && s.etat === "erreur") morceaux.push(`Sauvegarde DIFF en échec : ${s.erreur}`);
+    if (!morceaux.length) morceaux.push(etat.indexActif ? "Index actif." : "Index désactivé.");
+    el.animStatut.textContent = morceaux.join(" ");
   }
 
   // ------------------------------------------------------------------ //
-  // Actions principales
+  // Écran 1 : catalogue
+  // ------------------------------------------------------------------ //
+  async function chargerJeux() {
+    const sequence = ++etat.sequenceJeux;
+    const rep = await api().rechercher_jeux(el.champJeu.value);
+    if (sequence !== etat.sequenceJeux) return; // une recherche plus récente a pris le relais
+    if (!rep.success) {
+      afficherErreur(rep.error);
+      return;
+    }
+    masquerErreur();
+    el.listeJeux.replaceChildren(...rep.jeux.map(carteJeu));
+    el.catalogueInfo.textContent = rep.jeux.length
+      ? ""
+      : "Aucun jeu ne correspond. Essaie un autre mot !";
+  }
+
+  function carteJeu(jeu) {
+    const carte = creer("article", "carte jeu");
+    carte.append(
+      creer("h3", "", jeu.titre),
+      creer("p", "jeu-meta", `${jeu.plateforme} · ${jeu.genre} · ${jeu.annee}`)
+    );
+    const pied = creer("div", "jeu-pied");
+    const bouton = creer("button", "bouton", "Offrir ce jeu");
+    bouton.addEventListener("click", () => choisirJeu(jeu));
+    pied.append(creer("span", "jeu-prix", formatPrix(jeu.prix)), bouton);
+    carte.append(pied);
+    return carte;
+  }
+
+  function choisirJeu(jeu) {
+    etat.jeu = jeu;
+    el.recapJeu.replaceChildren(
+      creer("h3", "", jeu.titre),
+      creer("p", "jeu-meta", `${jeu.plateforme} · ${jeu.genre}`),
+      creer("span", "jeu-prix", formatPrix(jeu.prix))
+    );
+    el.amiErreur.hidden = true;
+    afficherEcran("ami");
+    (el.champVisiteur.value ? el.champAmi : el.champVisiteur).focus();
+  }
+
+  // ------------------------------------------------------------------ //
+  // Écran 2 : offrir le jeu (INSERT joueur + achat, en transaction)
+  // ------------------------------------------------------------------ //
+  async function offrirJeu() {
+    if (etat.enCours) return;
+    const visiteur = el.champVisiteur.value.trim();
+    const ami = el.champAmi.value.trim();
+    if (!visiteur || !ami) {
+      el.amiErreur.textContent = "Il manque ton pseudo ou celui de ton ami.";
+      el.amiErreur.hidden = false;
+      return;
+    }
+    el.amiErreur.hidden = true;
+    etat.enCours = true;
+    el.btnOffrir.disabled = true;
+    majBoutons();
+    try {
+      const rep = await api().offrir_jeu(etat.jeu.jeux_id, ami, visiteur);
+      if (!rep.success) {
+        el.amiErreur.textContent = rep.error;
+        el.amiErreur.hidden = false;
+        return;
+      }
+      masquerErreur();
+      etat.visiteur = visiteur;
+      etat.ami = ami;
+      journal(`Cadeau enregistré : achat n°${rep.achats_id} (${formatPrix(rep.prix_paye)}).`);
+      preparerRecherche();
+    } finally {
+      etat.enCours = false;
+      el.btnOffrir.disabled = false;
+      majBoutons();
+    }
+  }
+
+  // ------------------------------------------------------------------ //
+  // Écran 3 : recherche de l'ami, chrono avant / après
+  // ------------------------------------------------------------------ //
+  function preparerRecherche() {
+    etat.avantMs = null;
+    etat.apresMs = null;
+    el.champRecherche.value = etat.ami;
+    el.valeurAvant.textContent = "—";
+    el.valeurApres.textContent = "—";
+    el.chronoAvant.classList.remove("actif");
+    el.chronoApres.classList.remove("actif");
+    el.rapport.hidden = true;
+    el.btnRelancer.hidden = true;
+    el.btnOk.hidden = true;
+    el.rechercheTitre.textContent = "Cadeau enregistré !";
+    el.rechercheMessage.textContent = "";
+    afficherEcran("recherche");
+  }
+
+  async function rechercherAmi() {
+    if (etat.enCours || etat.operation) return;
+    const pseudo = el.champRecherche.value.trim();
+    if (!pseudo) return;
+    etat.enCours = true;
+    majBoutons();
+    // Le vrai cadre (avant / après) est déterminé par is_disabled dans la réponse ;
+    // en attendant, on anime celui que l'on attend.
+    const cible = etat.indexActif ? el.valeurApres : el.valeurAvant;
+    const texteAvant = cible.textContent;
+    cible.textContent = "…";
+    cible.classList.add("en-cours");
+    el.rechercheMessage.textContent = "Recherche en cours parmi 50 millions de joueurs…";
+    try {
+      const rep = await api().rechercher_joueur(pseudo);
+      cible.classList.remove("en-cours");
+      cible.textContent = texteAvant;
+      if (!rep.success) {
+        el.rechercheMessage.textContent = "";
+        afficherErreur(rep.error);
+        return;
+      }
+      masquerErreur();
+      afficherResultatRecherche(rep, pseudo);
+    } finally {
+      cible.classList.remove("en-cours");
+      etat.enCours = false;
+      majBoutons();
+    }
+  }
+
+  function afficherResultatRecherche(rep, pseudo) {
+    const apres = rep.index_desactive === false;
+    const cible = apres ? el.valeurApres : el.valeurAvant;
+    cible.textContent = formatDuree(rep.duree_ms);
+    (apres ? el.chronoApres : el.chronoAvant).classList.add("actif");
+    const trouve = rep.trouve ? `« ${pseudo} » trouvé.` : `« ${pseudo} » : aucun joueur trouvé.`;
+    journal(`Recherche ${apres ? "AVEC" : "SANS"} index : ${formatDuree(rep.duree_ms)}.`);
+
+    if (apres) {
+      etat.apresMs = rep.duree_ms;
+      el.btnRelancer.hidden = false;
+      el.btnOk.hidden = false;
+      el.rechercheMessage.textContent = `${trouve} Quelle différence ! Clique sur OK pour valider ton achat.`;
+      if (etat.avantMs !== null) {
+        const facteur = Math.max(1, Math.round(etat.avantMs / Math.max(1, rep.duree_ms)));
+        el.rapport.textContent = `${facteur.toLocaleString("fr-FR")} fois plus rapide !`;
+        el.rapport.hidden = false;
+      }
+    } else {
+      etat.avantMs = rep.duree_ms;
+      el.rechercheMessage.textContent =
+        `${trouve} C'était long… Demande à l'animateur d'accélérer la recherche !`;
+    }
+  }
+
+  /** Remet la recherche « avec index » à disposition dès que l'index est actif. */
+  function majBoutonsRecherche() {
+    if (etat.ecran !== "recherche") return;
+    if (etat.indexActif && etat.apresMs === null) {
+      el.btnRelancer.hidden = false;
+      el.rechercheMessage.textContent =
+        "C'est prêt ! Relance la même recherche pour voir la différence.";
+    }
+  }
+
+  async function validerAchat() {
+    if (etat.enCours) return;
+    etat.enCours = true;
+    majBoutons();
+    el.btnOk.textContent = "Validation…";
+    try {
+      // Écrit une opération dans la base puis déclenche l'incident, sans rien montrer.
+      const rep = await api().valider_achat();
+      if (!rep.success) {
+        afficherErreur(rep.error);
+        return;
+      }
+      masquerErreur();
+      journal("Achat validé — la base est tombée en panne.");
+      montrerPanne(true);
+    } finally {
+      el.btnOk.textContent = "OK";
+      etat.enCours = false;
+      majBoutons();
+    }
+  }
+
+  // ------------------------------------------------------------------ //
+  // Écran 4 : panne, puis restauration (animateur)
+  // ------------------------------------------------------------------ //
+  function montrerPanne(avecEffet) {
+    el.panneChrono.hidden = true;
+    el.panneMessage.textContent = "Appelle l'animateur : il va tout réparer.";
+    afficherEcran("panne");
+    if (avecEffet) {
+      el.overlay.classList.remove("actif");
+      void el.overlay.offsetWidth; // relance l'animation
+      el.overlay.classList.add("actif");
+      document.body.classList.remove("tremble");
+      void document.body.offsetWidth;
+      document.body.classList.add("tremble");
+    }
+  }
+
+  async function restaurer() {
+    if (etat.enCours || etat.ecran !== "panne") return;
+    etat.enCours = true;
+    majBoutons();
+    el.panneMessage.textContent = "Réparation en cours… SQL Server remet les sauvegardes dans l'ordre.";
+    demarrerChrono(el.panneChrono);
+    try {
+      const rep = await api().restaurer();
+      arreterChrono();
+      if (!rep.success) {
+        el.panneMessage.textContent = "La réparation a rencontré un problème.";
+        afficherErreur(rep.error);
+        return;
+      }
+      masquerErreur();
+      journal(`Restauration terminée : ${formatDuree(rep.duree_ms)}.`);
+      montrerReveal(rep);
+    } catch (e) {
+      arreterChrono();
+      afficherErreur(String(e));
+    } finally {
+      arreterChrono();
+      etat.enCours = false;
+      majBoutons();
+    }
+  }
+
+  // ------------------------------------------------------------------ //
+  // Écran 5 : reveal
+  // ------------------------------------------------------------------ //
+  const LIBELLES_ETAPES = {
+    FULL: "1. Sauvegarde complète (FULL)",
+    DIFF: "2. Sauvegarde différentielle (DIFF)",
+    LOG: "3. Journal de transactions (LOG)",
+  };
+
+  function montrerReveal(rep) {
+    const dernier = rep.reveal[0];
+    const lignes = dernier
+      ? [
+          ["Jeu offert", dernier.titre],
+          ["Pseudo de l'ami", dernier.ami],
+          ["Offert par", dernier.offertPar || "—"],
+          ["Date de l'achat", dernier.dateAchat],
+        ]
+      : [["Dernier achat", "introuvable (la base est vide ?)"]];
+    el.revealAchat.replaceChildren(
+      ...lignes.map(([nom, valeur]) => {
+        const l = creer("div", "reveal-ligne");
+        l.append(creer("span", "", nom), creer("span", "", String(valeur)));
+        return l;
+      })
+    );
+    const items = rep.etapes.map((e) => {
+      const li = creer("li");
+      li.append(creer("span", "", LIBELLES_ETAPES[e.nom] || e.nom), creer("span", "", formatDuree(e.duree_ms)));
+      return li;
+    });
+    const total = creer("li");
+    total.append(creer("span", "", "Total"), creer("span", "", formatDuree(rep.duree_ms)));
+    el.revealDurees.replaceChildren(...items, total);
+    afficherEcran("reveal");
+  }
+
+  // ------------------------------------------------------------------ //
+  // Animateur : index et reset
+  // ------------------------------------------------------------------ //
+  async function activerIndex() {
+    if (etat.enCours || etat.ecran !== "recherche") return;
+    etat.enCours = true;
+    el.btnIndex.textContent = "Activation…";
+    el.rechercheMessage.textContent = "L'animateur prépare l'index… un peu de patience !";
+    majBoutons();
+    try {
+      const rep = await api().activer_index();
+      if (!rep.success) {
+        afficherErreur(rep.error);
+        return;
+      }
+      masquerErreur();
+      etat.indexActif = true;
+      journal(`Index activé : ${formatDuree(rep.duree_ms)} (sauvegarde DIFF lancée en arrière-plan).`);
+      majBoutonsRecherche();
+    } finally {
+      el.btnIndex.textContent = "Activer l'index";
+      etat.enCours = false;
+      majBoutons();
+      majStatutAnimateur();
+    }
+  }
+
+  function demanderReset() {
+    if (etat.enCours) return;
+    if (!etat.confirmationReset) {
+      el.btnReset.textContent = "Confirmer le reset ?";
+      etat.confirmationReset = setTimeout(annulerConfirmationReset, 3000);
+      return;
+    }
+    annulerConfirmationReset();
+    reset();
+  }
+
+  function annulerConfirmationReset() {
+    clearTimeout(etat.confirmationReset);
+    etat.confirmationReset = null;
+    el.btnReset.textContent = "Reset";
+  }
+
+  async function reset() {
+    etat.enCours = true;
+    el.attenteTitre.textContent = "Préparation de la démo…";
+    el.attenteMessage.textContent = "On remet tout en place pour le prochain visiteur. Cela prend 1 à 2 minutes.";
+    el.overlay.classList.remove("actif");
+    document.body.classList.remove("tremble");
+    demarrerChrono(el.attenteChrono);
+    afficherEcran("attente");
+    try {
+      const rep = await api().reset();
+      arreterChrono();
+      if (!rep.success) {
+        el.attenteTitre.textContent = "Réinitialisation impossible";
+        el.attenteMessage.textContent = "Préviens l'animateur.";
+        afficherErreur(rep.error);
+        return;
+      }
+      masquerErreur();
+      const controle = [];
+      if (rep.index_desactive !== undefined) controle.push(`idx_pseudo désactivé : ${rep.index_desactive ? "oui" : "NON"}`);
+      if (rep.nb_achats !== undefined) controle.push(`achats : ${rep.nb_achats}`);
+      journal(`Reset terminé : ${formatDuree(rep.duree_ms)}${controle.length ? " (" + controle.join(", ") + ")" : ""}.`);
+      etat.jeu = null;
+      etat.ami = "";
+      etat.visiteur = "";
+      etat.indexActif = false;
+      el.champVisiteur.value = "";
+      el.champAmi.value = "";
+      el.champJeu.value = "";
+      nouveauVisiteur();
+    } catch (e) {
+      arreterChrono();
+      afficherErreur(String(e));
+    } finally {
+      arreterChrono();
+      etat.enCours = false;
+      majBoutons();
+    }
+  }
+
+  function nouveauVisiteur() {
+    afficherEcran("catalogue");
+    chargerJeux();
+    el.champJeu.focus();
+  }
+
+  // ------------------------------------------------------------------ //
+  // Statut / polling
   // ------------------------------------------------------------------ //
   async function rafraichirStatut(silencieux) {
     try {
-      const rep = await window.pywebview.api.get_status();
-      if (rep.success) {
+      const rep = await api().get_status();
+      if (!rep.success) {
+        majPointStatut("erreur", "Erreur");
+        if (!silencieux) afficherErreur(rep.error);
+        return rep;
+      }
+      etat.operation = rep.operation;
+      etat.sauvegarde = rep.sauvegarde;
+      if (rep.occupe) {
+        majPointStatut("attente", "Opération en cours");
+      } else if (rep.etat === "en_ligne") {
         masquerErreur();
         majPointStatut("ok", "Connecté");
-        if (!etat.enCours) {
-          majCompteur(rep.total);
+        const actif = rep.index_desactive === false;
+        if (actif !== etat.indexActif && !etat.enCours) {
+          etat.indexActif = actif;
+          majBoutonsRecherche();
         }
-        el.compteurLegende.textContent = "billets en base";
-        el.compteur.classList.remove("en-cours");
-        return rep;
-      }
-      if (rep.restauration_en_cours) {
+      } else if (rep.etat === "restoring") {
         majPointStatut("attente", "Restauration en cours");
-        el.compteurLegende.textContent = "restauration en cours…";
-        el.compteur.classList.add("en-cours");
-        return rep;
+      } else {
+        majPointStatut("erreur", "Base injoignable");
+        // Base détachée (panne) : on l'affiche même si l'appli a été relancée entre-temps.
+        if (!etat.enCours && etat.ecran !== "panne" && etat.ecran !== "reveal") montrerPanne(false);
       }
-      majPointStatut("erreur", "Erreur");
-      if (!silencieux) afficherErreur(rep.error);
+      majBoutons();
+      majStatutAnimateur();
       return rep;
     } catch (e) {
       majPointStatut("erreur", "Erreur");
@@ -192,153 +572,63 @@
     }
   }
 
-  async function vendreBillets() {
-    if (etat.enCours) return;
-    etat.enCours = true;
-    el.btnVendre.disabled = true;
-    try {
-      const rep = await window.pywebview.api.vendre_billets();
-      if (rep.success) {
-        masquerErreur();
-        majCompteur(rep.total);
-      } else {
-        afficherErreur(rep.error);
-      }
-    } finally {
-      etat.enCours = false;
-      el.btnVendre.disabled = etat.incidentActif;
-    }
-  }
-
-  async function declencherIncident() {
-    if (etat.enCours) return;
-    etat.enCours = true;
-    el.btnVendre.disabled = true;
-    el.btnIncident.disabled = true;
-
-    el.overlay.classList.remove("actif");
-    void el.overlay.offsetWidth; // relance l'animation
-    el.overlay.classList.add("actif");
-    document.body.classList.remove("tremble");
-    void document.body.offsetWidth;
-    document.body.classList.add("tremble");
-
-    try {
-      const rep = await window.pywebview.api.declencher_incident();
-      if (rep.success) {
-        masquerErreur();
-        etat.incidentActif = true;
-        reinitialiserEtapesUI();
-        deverrouillerEtape(1);
-        majCompteur(rep.total);
-      } else {
-        afficherErreur(rep.error);
-        el.btnVendre.disabled = false;
-        el.btnIncident.disabled = false;
-      }
-    } finally {
-      etat.enCours = false;
-    }
-  }
-
-  async function restaurerEtape(n) {
-    if (etat.enCours) return;
-    etat.enCours = true;
-    marquerEtapeEnCours(n);
-    try {
-      const rep = await window.pywebview.api.restaurer_etape(n);
-      if (rep.success) {
-        masquerErreur();
-        marquerEtapeTerminee(n, rep.sql, rep.duree_ms);
-        etat.etapeMaxTerminee = n;
-        if (n === 3) {
-          etat.incidentActif = false;
-          el.btnVendre.disabled = false;
-          el.btnIncident.disabled = false;
-          const statut = await rafraichirStatut(true);
-          if (statut.success) majCompteur(statut.total);
-        }
-      } else {
-        marquerEtapeErreur(n, rep.error);
-      }
-    } catch (e) {
-      marquerEtapeErreur(n, String(e));
-    } finally {
-      etat.enCours = false;
-    }
-  }
-
-  async function reinitialiserDemo() {
-    if (etat.enCours) return;
-    etat.enCours = true;
-    try {
-      const rep = await window.pywebview.api.reinitialiser();
-      etat.incidentActif = false;
-      etat.etapeMaxTerminee = 0;
-      reinitialiserEtapesUI();
-      el.btnVendre.disabled = false;
-      el.btnIncident.disabled = false;
-      el.overlay.classList.remove("actif");
-      document.body.classList.remove("tremble");
-      if (rep.success) {
-        masquerErreur();
-        majCompteur(rep.total);
-      } else if (!rep.restauration_en_cours) {
-        afficherErreur(rep.error);
-      }
-    } finally {
-      etat.enCours = false;
-    }
-  }
-
-  function basculerPanneauSql(n) {
-    const e = elementsEtape(n);
-    const ouvert = !e.panneau.hidden;
-    e.panneau.hidden = ouvert;
-    const chevron = e.boutonVoirSql.querySelector(".chevron");
-    if (chevron) chevron.classList.toggle("ouvert", !ouvert);
-  }
-
   // ------------------------------------------------------------------ //
   // Initialisation
   // ------------------------------------------------------------------ //
   function attacherEvenements() {
-    el.btnVendre.addEventListener("click", vendreBillets);
-    el.btnIncident.addEventListener("click", declencherIncident);
-    el.btnReinitialiser.addEventListener("click", reinitialiserDemo);
-    el.btnReessayer.addEventListener("click", async () => {
-      const rep = await window.pywebview.api.reessayer_connexion();
-      if (rep.success) {
-        masquerErreur();
-        majPointStatut("ok", "Connecté");
-        majCompteur(rep.total);
-        el.btnVendre.disabled = false;
-        el.btnIncident.disabled = false;
-      } else {
-        afficherErreur(rep.error);
+    let minuteur;
+    el.champJeu.addEventListener("input", () => {
+      clearTimeout(minuteur);
+      minuteur = setTimeout(chargerJeux, DELAI_RECHERCHE_JEU_MS);
+    });
+    el.btnRetourCatalogue.addEventListener("click", () => afficherEcran("catalogue"));
+    el.btnOffrir.addEventListener("click", offrirJeu);
+    [el.champVisiteur, el.champAmi].forEach((c) =>
+      c.addEventListener("keydown", (e) => e.key === "Enter" && offrirJeu())
+    );
+    el.btnRechercher.addEventListener("click", rechercherAmi);
+    el.btnRelancer.addEventListener("click", rechercherAmi);
+    el.champRecherche.addEventListener("keydown", (e) => e.key === "Enter" && rechercherAmi());
+    el.btnOk.addEventListener("click", validerAchat);
+
+    el.btnIndex.addEventListener("click", activerIndex);
+    el.btnRestaurer.addEventListener("click", restaurer);
+    el.btnReset.addEventListener("click", demanderReset);
+    el.btnFermerAnim.addEventListener("click", basculerPanneau);
+
+    // Accès animateur : Ctrl+Maj+L, ou 5 clics rapides sur le logo (écran tactile).
+    document.addEventListener("keydown", (e) => {
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "l") {
+        e.preventDefault();
+        basculerPanneau();
+      }
+    });
+    let clics = [];
+    el.logo.addEventListener("click", () => {
+      const maintenant = Date.now();
+      clics = clics.filter((t) => maintenant - t < 2500).concat(maintenant);
+      if (clics.length >= CLICS_LOGO_ANIMATEUR) {
+        clics = [];
+        basculerPanneau();
       }
     });
 
-    document.querySelectorAll('[data-action="restaurer"]').forEach((bouton) => {
-      bouton.addEventListener("click", () => restaurerEtape(Number(bouton.dataset.etape)));
-    });
-    document.querySelectorAll(".bouton-voir-sql").forEach((bouton) => {
-      bouton.addEventListener("click", () => basculerPanneauSql(Number(bouton.dataset.etape)));
+    el.btnReessayer.addEventListener("click", async () => {
+      const rep = await api().reessayer_connexion();
+      if (rep.success) {
+        masquerErreur();
+        majPointStatut("ok", "Connecté");
+        if (etat.ecran === "attente") nouveauVisiteur();
+      } else {
+        afficherErreur(rep.error);
+      }
     });
   }
 
   async function initialiser() {
     attacherEvenements();
-    reinitialiserEtapesUI();
-
     const rep = await rafraichirStatut(false);
-    if (rep.success) {
-      el.compteur.textContent = formatNombre(rep.total);
-      etat.total = rep.total;
-      el.btnVendre.disabled = false;
-      el.btnIncident.disabled = false;
-    }
-
+    if (rep.success && etat.ecran === "attente") nouveauVisiteur();
     etat.pollHandle = setInterval(() => rafraichirStatut(true), INTERVALLE_POLLING_MS);
   }
 
