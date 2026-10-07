@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>LootTable — Démo hors ligne</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-ecran="attente">
+  <div id="incident-overlay"></div>
+
+  <div id="banniere-erreur" class="banniere-erreur" hidden>
+    <span>
+      <strong>Petit souci technique — préviens l'animateur.</strong>
+      <small id="banniere-erreur-texte"></small>
+    </span>
+    <button id="btn-reessayer">Réessayer la connexion</button>
+  </div>
+
+  <header class="entete">
+    <div class="logo" id="logo" aria-label="LootTable">
+      <span class="logo-loot">LOOT</span><span class="logo-table">[TABLE]</span>
+    </div>
+    <div class="statut-connexion">
+      <span id="point-statut" class="point-statut"></span>
+      <span id="texte-statut">Connexion…</span>
+    </div>
+  </header>
+
+  <main>
+    <!-- 1. Catalogue -->
+    <section class="ecran" id="ecran-catalogue">
+      <h1>Offre un jeu à un ami</h1>
+      <p class="intro">Choisis un jeu dans le catalogue. Tu peux chercher par nom, par genre (Course, RPG…) ou par console (PC, Switch…).</p>
+      <input id="champ-jeu" class="champ champ-large" type="search" autocomplete="off"
+             placeholder="Cherche un jeu : Mario, Zelda, course…" />
+      <p id="catalogue-info" class="info"></p>
+      <div id="liste-jeux" class="liste-jeux"></div>
+    </section>
+
+    <!-- 2. Pseudo de l'ami -->
+    <section class="ecran" id="ecran-ami">
+      <h1>Pour qui est ce cadeau ?</h1>
+      <div class="carte carte-jeu" id="recap-jeu"></div>
+      <label class="etiquette" for="champ-visiteur">Ton pseudo</label>
+      <input id="champ-visiteur" class="champ" type="text" maxlength="50" autocomplete="off" placeholder="Ex : Lucas" />
+      <label class="etiquette" for="champ-ami">Le pseudo de ton ami</label>
+      <input id="champ-ami" class="champ" type="text" maxlength="50" autocomplete="off" placeholder="Ex : Emma_2010" />
+      <p class="info">Ton ami sera ajouté à la liste de tous les joueurs de LootTable, et le cadeau sera enregistré à ton nom.</p>
+      <p id="ami-erreur" class="info info-erreur" hidden></p>
+      <div class="actions">
+        <button id="btn-retour-catalogue" class="bouton">← Changer de jeu</button>
+        <button id="btn-offrir" class="bouton bouton-primaire">Offrir le jeu</button>
+      </div>
+    </section>
+
+    <!-- 3. Recherche de l'ami + chrono avant / après -->
+    <section class="ecran" id="ecran-recherche">
+      <h1 id="recherche-titre">Cadeau enregistré !</h1>
+      <p class="intro">Vérifions que ton ami est bien dans la liste. LootTable compte <strong>50 millions de joueurs</strong> : retrouvons-le.</p>
+      <div class="ligne-recherche">
+        <input id="champ-recherche" class="champ" type="text" maxlength="50" autocomplete="off" />
+        <button id="btn-rechercher" class="bouton bouton-primaire">Chercher mon ami</button>
+      </div>
+
+      <div class="chronos">
+        <article class="carte chrono" id="chrono-avant">
+          <h2>Sans index</h2>
+          <div class="chrono-valeur" id="valeur-avant">—</div>
+          <p class="chrono-texte">L'ordinateur lit les 50 millions de pseudos un par un, comme chercher un mot dans un livre sans sommaire.</p>
+        </article>
+        <article class="carte chrono" id="chrono-apres">
+          <h2>Avec index</h2>
+          <div class="chrono-valeur" id="valeur-apres">—</div>
+          <p class="chrono-texte">L'index est le sommaire du livre : il indique directement la bonne page.</p>
+        </article>
+      </div>
+      <p id="chrono-rapport" class="rapport" hidden></p>
+      <p id="recherche-message" class="info"></p>
+
+      <div class="actions">
+        <button id="btn-relancer" class="bouton bouton-primaire" hidden>Relancer la même recherche</button>
+        <button id="btn-ok" class="bouton bouton-primaire" hidden>OK</button>
+      </div>
+    </section>
+
+    <!-- 4. Panne -->
+    <section class="ecran" id="ecran-panne">
+      <div class="panne-code">ERREUR</div>
+      <h1>Connexion à la base de données impossible</h1>
+      <p class="intro">Le serveur ne répond plus. Toutes les données de LootTable sont inaccessibles.</p>
+      <p class="intro" id="panne-message">Appelle l'animateur : il va tout réparer.</p>
+      <div class="chrono-valeur chrono-grand" id="panne-chrono" hidden>0:00</div>
+    </section>
+
+    <!-- 5. Reveal -->
+    <section class="ecran" id="ecran-reveal">
+      <h1>Tout est revenu !</h1>
+      <p class="intro">Grâce aux sauvegardes, SQL Server a remis la base d'aplomb, jusqu'à ton dernier achat.</p>
+      <div class="carte carte-reveal" id="reveal-achat"></div>
+      <h2 class="sous-titre">Temps de la réparation</h2>
+      <ul class="liste-durees" id="reveal-durees"></ul>
+    </section>
+
+    <!-- 6. Attente (démarrage, réinitialisation) -->
+    <section class="ecran" id="ecran-attente">
+      <h1 id="attente-titre">Un instant…</h1>
+      <p class="intro" id="attente-message">La démo se prépare.</p>
+      <div class="chrono-valeur chrono-grand" id="attente-chrono" hidden>0:00</div>
+    </section>
+  </main>
+
+  <!-- Panneau animateur : Ctrl+Maj+L, ou 5 clics rapides sur le logo -->
+  <aside id="panneau-animateur" class="panneau-animateur" hidden>
+    <div class="anim-entete">
+      <strong>Animateur</strong>
+      <button id="btn-fermer-anim" class="anim-fermer" aria-label="Fermer">×</button>
+    </div>
+    <p id="anim-statut" class="anim-statut"></p>
+    <div class="anim-boutons">
+      <button id="btn-index" class="bouton" disabled>Activer l'index</button>
+      <button id="btn-restaurer" class="bouton" disabled>Restaurer</button>
+      <button id="btn-reset" class="bouton">Reset</button>
+    </div>
+    <ul id="anim-journal" class="anim-journal"></ul>
+  </aside>
+
+  <!-- ===== MODE HORS LIGNE : fausse API Python, aucune base de données ===== -->
+  <script>
+  (() => {
+    // Durées simulées (ms) : à ajuster pour répéter le discours d'animateur.
+    const DUREE = { rechercheLente: 6000, rebuild: 5000, backupDiff: 7000, incident: 1500,
+                    full: 3200, diff: 900, log: 400, reset: 8000 };
+    const JEUX = [{"jeux_id": 1, "titre": "The Legend of Zelda: Breath of the Wild", "plateforme": "Switch", "genre": "Aventure", "prix": 59.9, "editeur": "Nintendo", "annee": 2017}, {"jeux_id": 2, "titre": "Super Mario Odyssey", "plateforme": "Switch", "genre": "Plateforme", "prix": 59.9, "editeur": "Nintendo", "annee": 2017}, {"jeux_id": 3, "titre": "Mario Kart 8 Deluxe", "plateforme": "Switch", "genre": "Course", "prix": 59.9, "editeur": "Nintendo", "annee": 2017}, {"jeux_id": 4, "titre": "Animal Crossing: New Horizons", "plateforme": "Switch", "genre": "Simulation", "prix": 59.9, "editeur": "Nintendo", "annee": 2020}, {"jeux_id": 5, "titre": "Splatoon 3", "plateforme": "Switch", "genre": "Tir", "prix": 59.9, "editeur": "Nintendo", "annee": 2022}, {"jeux_id": 6, "titre": "Super Smash Bros. Ultimate", "plateforme": "Switch", "genre": "Combat", "prix": 59.9, "editeur": "Nintendo", "annee": 2018}, {"jeux_id": 7, "titre": "Metroid Dread", "plateforme": "Switch", "genre": "Metroidvania", "prix": 49.9, "editeur": "Nintendo", "annee": 2021}, {"jeux_id": 8, "titre": "Pokémon Écarlate", "plateforme": "Switch", "genre": "RPG", "prix": 59.9, "editeur": "Game Freak", "annee": 2022}, {"jeux_id": 9, "titre": "Minecraft", "plateforme": "PC", "genre": "Bac à sable", "prix": 29.9, "editeur": "Mojang", "annee": 2011}, {"jeux_id": 10, "titre": "Hollow Knight", "plateforme": "PC", "genre": "Metroidvania", "prix": 14.99, "editeur": "Team Cherry", "annee": 2017}, {"jeux_id": 11, "titre": "Celeste", "plateforme": "PC", "genre": "Plateforme", "prix": 19.99, "editeur": "Maddy Makes Games", "annee": 2018}, {"jeux_id": 12, "titre": "Hades", "plateforme": "PC", "genre": "Roguelike", "prix": 24.99, "editeur": "Supergiant Games", "annee": 2020}, {"jeux_id": 13, "titre": "Stardew Valley", "plateforme": "PC", "genre": "Simulation", "prix": 13.99, "editeur": "ConcernedApe", "annee": 2016}, {"jeux_id": 14, "titre": "The Witcher 3: Wild Hunt", "plateforme": "PC", "genre": "RPG", "prix": 39.99, "editeur": "CD Projekt Red", "annee": 2015}, {"jeux_id": 15, "titre": "Cyberpunk 2077", "plateforme": "PC", "genre": "RPG", "prix": 59.99, "editeur": "CD Projekt Red", "annee": 2020}, {"jeux_id": 16, "titre": "Elden Ring", "plateforme": "PC", "genre": "RPG", "prix": 59.99, "editeur": "FromSoftware", "annee": 2022}, {"jeux_id": 17, "titre": "Dark Souls III", "plateforme": "PC", "genre": "RPG", "prix": 39.99, "editeur": "FromSoftware", "annee": 2016}, {"jeux_id": 18, "titre": "Baldur's Gate 3", "plateforme": "PC", "genre": "RPG", "prix": 59.99, "editeur": "Larian Studios", "annee": 2023}, {"jeux_id": 19, "titre": "Hogwarts Legacy", "plateforme": "PC", "genre": "RPG", "prix": 59.99, "editeur": "Avalanche Software", "annee": 2023}, {"jeux_id": 20, "titre": "Red Dead Redemption 2", "plateforme": "PC", "genre": "Action-aventure", "prix": 59.99, "editeur": "Rockstar Games", "annee": 2018}, {"jeux_id": 21, "titre": "Grand Theft Auto V", "plateforme": "PC", "genre": "Action-aventure", "prix": 29.99, "editeur": "Rockstar Games", "annee": 2015}, {"jeux_id": 22, "titre": "Portal 2", "plateforme": "PC", "genre": "Puzzle", "prix": 9.99, "editeur": "Valve", "annee": 2011}, {"jeux_id": 23, "titre": "Half-Life: Alyx", "plateforme": "PC", "genre": "Tir", "prix": 49.99, "editeur": "Valve", "annee": 2020}, {"jeux_id": 24, "titre": "Rocket League", "plateforme": "PC", "genre": "Sport", "prix": 19.99, "editeur": "Psyonix", "annee": 2015}, {"jeux_id": 25, "titre": "Tetris Effect", "plateforme": "PC", "genre": "Puzzle", "prix": 29.99, "editeur": "Enhance", "annee": 2018}, {"jeux_id": 26, "titre": "Cuphead", "plateforme": "PC", "genre": "Run and gun", "prix": 19.99, "editeur": "Studio MDHR", "annee": 2017}, {"jeux_id": 27, "titre": "Undertale", "plateforme": "PC", "genre": "RPG", "prix": 9.99, "editeur": "Toby Fox", "annee": 2015}, {"jeux_id": 28, "titre": "Subnautica", "plateforme": "PC", "genre": "Survie", "prix": 29.99, "editeur": "Unknown Worlds", "annee": 2018}, {"jeux_id": 29, "titre": "Street Fighter 6", "plateforme": "PC", "genre": "Combat", "prix": 49.99, "editeur": "Capcom", "annee": 2023}, {"jeux_id": 30, "titre": "Alan Wake 2", "plateforme": "PC", "genre": "Horreur", "prix": 59.99, "editeur": "Remedy", "annee": 2023}, {"jeux_id": 31, "titre": "God of War", "plateforme": "PS4", "genre": "Action-aventure", "prix": 49.99, "editeur": "Santa Monica Studio", "annee": 2018}, {"jeux_id": 32, "titre": "Horizon Zero Dawn", "plateforme": "PS4", "genre": "Action-aventure", "prix": 19.99, "editeur": "Guerrilla Games", "annee": 2017}, {"jeux_id": 33, "titre": "Marvel's Spider-Man", "plateforme": "PS4", "genre": "Action-aventure", "prix": 39.99, "editeur": "Insomniac Games", "annee": 2018}, {"jeux_id": 34, "titre": "The Last of Us Part II", "plateforme": "PS4", "genre": "Action-aventure", "prix": 39.99, "editeur": "Naughty Dog", "annee": 2020}, {"jeux_id": 35, "titre": "Gran Turismo 7", "plateforme": "PS5", "genre": "Course", "prix": 69.99, "editeur": "Polyphony Digital", "annee": 2022}, {"jeux_id": 36, "titre": "Astro Bot", "plateforme": "PS5", "genre": "Plateforme", "prix": 59.99, "editeur": "Team Asobi", "annee": 2024}, {"jeux_id": 37, "titre": "Ghost of Tsushima", "plateforme": "PS5", "genre": "Action-aventure", "prix": 59.99, "editeur": "Sucker Punch", "annee": 2020}, {"jeux_id": 38, "titre": "Resident Evil 4", "plateforme": "PS5", "genre": "Horreur", "prix": 39.99, "editeur": "Capcom", "annee": 2023}, {"jeux_id": 39, "titre": "EA Sports FC 25", "plateforme": "PS5", "genre": "Sport", "prix": 69.99, "editeur": "EA Sports", "annee": 2024}, {"jeux_id": 40, "titre": "Forza Horizon 5", "plateforme": "Xbox", "genre": "Course", "prix": 59.99, "editeur": "Playground Games", "annee": 2021}, {"jeux_id": 41, "titre": "Halo Infinite", "plateforme": "Xbox", "genre": "Tir", "prix": 59.99, "editeur": "343 Industries", "annee": 2021}, {"jeux_id": 42, "titre": "Gears 5", "plateforme": "Xbox", "genre": "Tir", "prix": 39.99, "editeur": "The Coalition", "annee": 2019}];
+    const attendre = (ms) => new Promise((r) => setTimeout(r, ms));
+    const alea = (a, b) => Math.round(a + Math.random() * (b - a));
+
+    let s;
+    function initEtat() {
+      s = { db: "en_ligne", indexActif: false, op: null, achats: [], joueurs: new Set(),
+            backup: { etat: "inactif", duree_ms: null, erreur: null } };
+    }
+    initEtat();
+
+    async function operation(nom, ms, fn) {
+      s.op = nom;
+      try { await attendre(ms); return fn ? fn() : undefined; } finally { s.op = null; }
+    }
+
+    window.pywebview = { api: {
+      async get_status() {
+        const base = { success: true, operation: s.op, sauvegarde: { ...s.backup }, index_active: s.indexActif };
+        if (s.op) return { ...base, occupe: true, etat: null };
+        return { ...base, occupe: false, etat: s.db,
+                 ...(s.db === "en_ligne" ? { index_desactive: !s.indexActif } : {}) };
+      },
+      async reessayer_connexion() { return this.get_status(); },
+      async rechercher_jeux(texte) {
+        await attendre(80);
+        const t = (texte || "").trim().toLowerCase();
+        const jeux = JEUX.filter((j) => !t || [j.titre, j.genre, j.plateforme].some((x) => x.toLowerCase().includes(t)));
+        return { success: true, jeux: jeux.slice(0, 50) };
+      },
+      async offrir_jeu(jeuxId, ami, visiteur) {
+        await attendre(300);
+        const jeu = JEUX.find((j) => j.jeux_id === jeuxId);
+        ami = (ami || "").trim(); visiteur = (visiteur || "").trim();
+        if (!ami || !visiteur) return { success: false, error: "Merci d'écrire un pseudo." };
+        s.joueurs.add(ami.toLowerCase());
+        const achat = { achats_id: s.achats.length + 1, ami, titre: jeu.titre, offertPar: visiteur,
+                        dateAchat: new Date().toISOString().slice(0, 19).replace("T", " "), prix: jeu.prix };
+        s.achats.push(achat);
+        return { success: true, achats_id: achat.achats_id, joueur_id: 50000000 + achat.achats_id, prix_paye: jeu.prix };
+      },
+      async rechercher_joueur(pseudo) {
+        const ms = s.indexActif ? alea(6, 18) : DUREE.rechercheLente + alea(-400, 400);
+        const index_desactive = !s.indexActif;
+        await attendre(ms);
+        const trouve = s.joueurs.has((pseudo || "").trim().toLowerCase());
+        return { success: true, trouve, duree_ms: ms, index_desactive,
+                 joueurs: trouve ? [{ joueur_id: 50000001, pseudo, dateCreation: "" }] : [] };
+      },
+      async activer_index() {
+        const debut = performance.now();
+        await operation("index", DUREE.rebuild);
+        s.indexActif = true;
+        s.backup = { etat: "en_cours", duree_ms: null, erreur: null };
+        const t0 = performance.now();
+        s.backupPromesse = attendre(DUREE.backupDiff).then(() => {
+          s.backup = { etat: "ok", duree_ms: Math.round(performance.now() - t0), erreur: null };
+        });
+        return { success: true, duree_ms: Math.round(performance.now() - debut), backup_lance: true };
+      },
+      async valider_achat() {
+        if (!s.indexActif) return { success: false, error: "L'index n'a pas été activé : la sauvegarde différentielle manque." };
+        if (s.backupPromesse) await s.backupPromesse;
+        await operation("incident", DUREE.incident, () => { s.db = "absente"; });
+        return { success: true, panne: true, duree_ms: DUREE.incident };
+      },
+      async restaurer() {
+        const debut = performance.now();
+        await operation("restauration", DUREE.full + DUREE.diff + DUREE.log, () => { s.db = "en_ligne"; });
+        const dernier = s.achats[s.achats.length - 1];
+        return { success: true, duree_ms: Math.round(performance.now() - debut),
+                 etapes: [{ nom: "FULL", duree_ms: DUREE.full }, { nom: "DIFF", duree_ms: DUREE.diff }, { nom: "LOG", duree_ms: DUREE.log }],
+                 reveal: dernier ? [dernier] : [] };
+      },
+      async reset() {
+        const debut = performance.now();
+        await operation("reset", DUREE.reset);
+        initEtat();
+        return { success: true, duree_ms: Math.round(performance.now() - debut), index_desactive: true, nb_achats: 0 };
+      },
+    } };
+
+    // Étiquette « hors ligne » + déclenchement de l'initialisation de app.js
+    const badge = document.createElement("div");
+    badge.textContent = "MODE DÉMO HORS LIGNE — aucune base de données";
+    badge.style.cssText = "position:fixed;left:0;bottom:0;background:#000;color:#fff;font:11px Helvetica,Arial,sans-serif;padding:4px 10px;z-index:100";
+    document.body.append(badge);
+    window.addEventListener("load", () => window.dispatchEvent(new Event("pywebviewready")));
+  })();
+  </script>
+  <script src="app.js"></script>
+</body>
+</html>
