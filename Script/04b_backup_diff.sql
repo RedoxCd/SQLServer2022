@@ -1,4 +1,4 @@
-﻿/* 04b - À lancer juste après le REBUILD (pendant que le visiteur relance sa recherche).
+/* 04b - À lancer juste après le REBUILD (pendant que le visiteur relance sa recherche).
    Le LOG0 « jetable » évite que le log du REBUILD (très gros) se retrouve dans le LOG1 de l'incident. */
 USE master;
 GO

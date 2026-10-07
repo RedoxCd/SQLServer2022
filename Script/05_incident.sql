@@ -1,4 +1,4 @@
-﻿/* 05 - INCIDENT (déclenché en silence par le clic « OK » du visiteur).
+/* 05 - INCIDENT (déclenché en silence par le clic « OK » du visiteur).
    1) sauvegarde du log (sans elle, pas de restauration à l'instant T)
    2) coupe les connexions et détache la base -> l'appli tombe en panne. */
 USE master;

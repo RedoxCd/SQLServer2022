@@ -1,4 +1,4 @@
-﻿/* 03 - Sauvegarde « GOLDEN » (état initial de la démo) - à faire UNE fois après le chargement.
+/* 03 - Sauvegarde « GOLDEN » (état initial de la démo) - à faire UNE fois après le chargement.
    Vérifier avant : idx_pseudo est bien is_disabled = 1. */
 USE master;
 GO

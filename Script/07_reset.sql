@@ -1,4 +1,4 @@
-﻿/* 07 - RESET entre deux visiteurs : restaure l'état GOLDEN puis recrée la base de la chaîne FULL.
+/* 07 - RESET entre deux visiteurs : restaure l'état GOLDEN puis recrée la base de la chaîne FULL.
    Durée : ~1-2 min (restore + backup full). À lancer pendant que le visiteur suivant est accueilli.
    Fonctionne que la base existe, soit en panne ou soit détachée. */
 USE master;
