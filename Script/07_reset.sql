@@ -1,4 +1,4 @@
-﻿/* 07 - RESET entre deux visiteurs : restaure l'état GOLDEN puis recrée la base de la chaîne FULL.
+/* 07 - RESET entre deux visiteurs : restaure l'état GOLDEN puis recrée la base de la chaîne FULL.
    Durée : ~1-2 min (restore + backup full). À lancer pendant que le visiteur suivant est accueilli.
    Fonctionne que la base existe, soit en panne ou soit détachée. */
 USE master;
@@ -14,7 +14,7 @@ ALTER DATABASE LootTable SET RECOVERY FULL;
 GO
 -- Nouveau FULL : point de départ de la chaîne FULL/DIFF/LOG du prochain visiteur
 BACKUP DATABASE LootTable
-TO DISK = N'C:\LootTable\Backup\LootTable_FULL.bak' WITH INIT, FORMAT, COMPRESSION, CHECKSUM, STATS = 20;
+TO DISK = N'C:\LootTable\Backup\LootTable_FULL.bak' WITH INIT, FORMAT, CHECKSUM, STATS = 20;
 GO
 -- Contrôle : l'index doit être désactivé (is_disabled = 1) et t_achats vide
 USE LootTable;
