@@ -598,7 +598,7 @@
 
     // Accès animateur : Ctrl+Maj+L, ou 5 clics rapides sur le logo (écran tactile).
     document.addEventListener("keydown", (e) => {
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "l") {
+      if ((e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "l") || e.key === "F9") {
         e.preventDefault();
         basculerPanneau();
       }
