@@ -768,10 +768,14 @@ body[data-ecran="panne"] .point-statut {
 
     // Étiquette « hors ligne » + déclenchement de l'initialisation de app.js
     const badge = document.createElement("div");
-    badge.textContent = "MODE DÉMO HORS LIGNE — aucune base de données";
+    badge.textContent = "MODE DÉMO HORS LIGNE — aucune base de données — panneau animateur : F9 ou Ctrl+Maj+L";
     badge.style.cssText = "position:fixed;left:0;bottom:0;background:#000;color:#fff;font:11px Helvetica,Arial,sans-serif;padding:4px 10px;z-index:100";
     document.body.append(badge);
-    window.addEventListener("load", () => window.dispatchEvent(new Event("pywebviewready")));
+    window.addEventListener("load", () => {
+      window.dispatchEvent(new Event("pywebviewready"));
+      // En test hors ligne, le panneau animateur est ouvert d'office (sinon on reste bloqué après la recherche lente).
+      document.getElementById("panneau-animateur").hidden = false;
+    });
   })();
   </script>
   <script>
@@ -1375,7 +1379,7 @@ body[data-ecran="panne"] .point-statut {
 
     // Accès animateur : Ctrl+Maj+L, ou 5 clics rapides sur le logo (écran tactile).
     document.addEventListener("keydown", (e) => {
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "l") {
+      if ((e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "l") || e.key === "F9") {
         e.preventDefault();
         basculerPanneau();
       }
