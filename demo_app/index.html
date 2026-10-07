@@ -107,6 +107,14 @@
       <p class="intro" id="attente-message">La démo se prépare.</p>
       <div class="chrono-valeur chrono-grand" id="attente-chrono" hidden>0:00</div>
     </section>
+    <!-- Commande SQL en cours : sert de support à l'animateur pour expliquer -->
+    <section id="bloc-sql" class="bloc-sql" hidden>
+      <div class="bloc-sql-entete">
+        <span id="sql-titre"></span>
+        <button id="btn-sql-replier" type="button">Masquer</button>
+      </div>
+      <pre><code id="sql-code"></code></pre>
+    </section>
   </main>
 
   <!-- Panneau animateur : Ctrl+Maj+L, ou 5 clics rapides sur le logo -->

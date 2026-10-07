@@ -45,6 +45,11 @@
     attenteTitre: $("attente-titre"),
     attenteMessage: $("attente-message"),
     attenteChrono: $("attente-chrono"),
+    // commande SQL affichée
+    blocSql: $("bloc-sql"),
+    sqlTitre: $("sql-titre"),
+    sqlCode: $("sql-code"),
+    btnSqlReplier: $("btn-sql-replier"),
     // animateur
     panneau: $("panneau-animateur"),
     animStatut: $("anim-statut"),
@@ -68,6 +73,8 @@
     sauvegarde: null,
     confirmationReset: null,
     sequenceJeux: 0,
+    sequenceSql: 0,
+    modelesSql: {},
     pollHandle: null,
     chronoHandle: null,
   };
@@ -98,6 +105,85 @@
     if (classe) n.className = classe;
     if (texte !== undefined) n.textContent = texte;
     return n;
+  }
+
+  // ------------------------------------------------------------------ //
+  // Commande SQL affichée à l'écran (support de l'animateur)
+  // ------------------------------------------------------------------ //
+  function surlignerSql(sql) {
+    const echap = (t) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const motif =
+      /(\/\*[\s\S]*?\*\/|--[^\n]*)|(N?'(?:[^']|'')*')|(\b(?:USE|GO|ALTER|INDEX|REBUILD|DATABASE|SET|SINGLE_USER|MULTI_USER|WITH|ROLLBACK|IMMEDIATE|BACKUP|LOG|RESTORE|FROM|DISK|TO|NORECOVERY|RECOVERY|REPLACE|STOPAT|INIT|FORMAT|COMPRESSION|CHECKSUM|DIFFERENTIAL|DELETE|INSERT|INTO|VALUES|SELECT|WHERE|AND|OR|LIKE|ORDER|BY|TOP|AS|JOIN|ON|DECLARE|PRINT|BEGIN|TRANSACTION|COMMIT|EXEC|ON|FILE|STATS|SYSDATETIME|SCOPE_IDENTITY)\b)/gi;
+    let sortie = "";
+    let dernier = 0;
+    let m;
+    while ((m = motif.exec(sql)) !== null) {
+      sortie += echap(sql.slice(dernier, m.index));
+      const [complet, commentaire, chaine] = m;
+      const classe = commentaire ? "sql-comment" : chaine ? "sql-string" : "sql-keyword";
+      sortie += `<span class="${classe}">${echap(complet)}</span>`;
+      dernier = m.index + complet.length;
+    }
+    return sortie + echap(sql.slice(dernier));
+  }
+
+  async function modeleSql(nom) {
+    if (!(nom in etat.modelesSql)) {
+      const rep = await api().get_sql(nom);
+      etat.modelesSql[nom] = rep.success ? rep.sql : `-- Commande indisponible : ${rep.error}`;
+    }
+    return etat.modelesSql[nom];
+  }
+
+  /** Remplace les {valeurs} d'un modèle (apostrophes doublées, comme en T-SQL). */
+  function remplirSql(modele, valeurs) {
+    return modele.replace(/\{(\w+)\}/g, (m, cle) =>
+      cle in valeurs ? String(valeurs[cle]).replace(/'/g, "''") : m
+    );
+  }
+
+  async function montrerSql(titre, nom, valeurs, prefixe) {
+    const sequence = ++etat.sequenceSql;
+    let sql = await modeleSql(nom);
+    if (sequence !== etat.sequenceSql) return; // une commande plus récente a pris le relais
+    if (valeurs) sql = remplirSql(sql, valeurs);
+    if (prefixe) sql = prefixe + "\n" + sql;
+    el.sqlTitre.textContent = titre;
+    el.sqlCode.innerHTML = surlignerSql(sql);
+    el.blocSql.hidden = false;
+  }
+
+  function cacherSql() {
+    etat.sequenceSql++;
+    el.blocSql.hidden = true;
+  }
+
+  function majSqlCatalogue() {
+    montrerSql("Commande SQL — recherche d'un jeu (petite table : très rapide)", "jeux", {
+      texte: el.champJeu.value.trim(),
+    });
+  }
+
+  function majSqlOffrir() {
+    if (!etat.jeu) return;
+    montrerSql("Commande SQL — offrir le jeu : deux ajouts dans une seule transaction", "offrir", {
+      ami: el.champAmi.value.trim() || "…",
+      visiteur: el.champVisiteur.value.trim() || "…",
+      jeux_id: etat.jeu.jeux_id,
+      prix: etat.jeu.prix,
+    });
+  }
+
+  function majSqlRecherche() {
+    const prefixe = etat.indexActif
+      ? "-- Index idx_pseudo ACTIF : SQL Server va directement à la bonne ligne."
+      : "-- Index idx_pseudo DÉSACTIVÉ : SQL Server doit lire les 50 millions de lignes.";
+    montrerSql(
+      "Commande SQL — recherche de l'ami parmi 50 millions de joueurs",
+      "joueur",
+      { pseudo: el.champRecherche.value.trim() || "…" },
+      prefixe
+    );
   }
 
   function afficherErreur(message) {
@@ -191,6 +277,7 @@
     el.catalogueInfo.textContent = rep.jeux.length
       ? ""
       : "Aucun jeu ne correspond. Essaie un autre mot !";
+    if (etat.ecran === "catalogue") majSqlCatalogue();
   }
 
   function carteJeu(jeu) {
@@ -216,6 +303,7 @@
     );
     el.amiErreur.hidden = true;
     afficherEcran("ami");
+    majSqlOffrir();
     (el.champVisiteur.value ? el.champAmi : el.champVisiteur).focus();
   }
 
@@ -271,6 +359,7 @@
     el.rechercheTitre.textContent = "Cadeau enregistré !";
     el.rechercheMessage.textContent = "";
     afficherEcran("recherche");
+    majSqlRecherche();
   }
 
   async function rechercherAmi() {
@@ -286,6 +375,7 @@
     cible.textContent = "…";
     cible.classList.add("en-cours");
     el.rechercheMessage.textContent = "Recherche en cours parmi 50 millions de joueurs…";
+    majSqlRecherche();
     try {
       const rep = await api().rechercher_joueur(pseudo);
       cible.classList.remove("en-cours");
@@ -367,6 +457,7 @@
   function montrerPanne(avecEffet) {
     el.panneChrono.hidden = true;
     el.panneMessage.textContent = "Appelle l'animateur : il va tout réparer.";
+    cacherSql(); // on ne montre pas la cause de la panne avant la réparation
     afficherEcran("panne");
     if (avecEffet) {
       el.overlay.classList.remove("actif");
@@ -384,6 +475,7 @@
     majBoutons();
     el.panneMessage.textContent = "Réparation en cours… SQL Server remet les sauvegardes dans l'ordre.";
     demarrerChrono(el.panneChrono);
+    montrerSql("Commande SQL — restauration : FULL, puis DIFF, puis LOG", "restauration");
     try {
       const rep = await api().restaurer();
       arreterChrono();
@@ -450,6 +542,7 @@
     etat.enCours = true;
     el.btnIndex.textContent = "Activation…";
     el.rechercheMessage.textContent = "L'animateur prépare l'index… un peu de patience !";
+    montrerSql("Commande SQL — création de l'index (04a), puis sauvegarde en arrière-plan (04b)", "index");
     majBoutons();
     try {
       const rep = await api().activer_index();
@@ -494,6 +587,7 @@
     document.body.classList.remove("tremble");
     demarrerChrono(el.attenteChrono);
     afficherEcran("attente");
+    montrerSql("Commande SQL — remise à zéro pour le visiteur suivant", "reset");
     try {
       const rep = await api().reset();
       arreterChrono();
@@ -581,7 +675,16 @@
       clearTimeout(minuteur);
       minuteur = setTimeout(chargerJeux, DELAI_RECHERCHE_JEU_MS);
     });
-    el.btnRetourCatalogue.addEventListener("click", () => afficherEcran("catalogue"));
+    el.btnRetourCatalogue.addEventListener("click", () => {
+      afficherEcran("catalogue");
+      majSqlCatalogue();
+    });
+    el.btnSqlReplier.addEventListener("click", () => {
+      const replie = el.blocSql.classList.toggle("replie");
+      el.btnSqlReplier.textContent = replie ? "Afficher" : "Masquer";
+    });
+    [el.champVisiteur, el.champAmi].forEach((c) => c.addEventListener("input", majSqlOffrir));
+    el.champRecherche.addEventListener("input", majSqlRecherche);
     el.btnOffrir.addEventListener("click", offrirJeu);
     [el.champVisiteur, el.champAmi].forEach((c) =>
       c.addEventListener("keydown", (e) => e.key === "Enter" && offrirJeu())

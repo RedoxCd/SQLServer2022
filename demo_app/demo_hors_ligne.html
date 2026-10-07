@@ -501,9 +501,9 @@ body[data-ecran="panne"] .point-statut {
 .panneau-animateur {
   position: fixed;
   right: 16px;
-  bottom: 16px;
+  top: 100px;
   width: 340px;
-  max-height: 70vh;
+  max-height: calc(100vh - 100px - 36vh);
   overflow-y: auto;
   z-index: 40;
   background: var(--blanc);
@@ -557,6 +557,73 @@ body[data-ecran="panne"] .point-statut {
   padding: 4px 0;
   border-top: 1px solid var(--gris-clair);
 }
+
+/* -------------------- Commande SQL affichée à l'écran -------------------- */
+.bloc-sql {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  border: 2px solid var(--noir);
+  background: var(--noir);
+  color: var(--blanc);
+}
+
+body[data-ecran="panne"] .bloc-sql {
+  border-color: var(--blanc);
+}
+
+body:has(#bloc-sql:not([hidden])) main {
+  padding-bottom: 42vh;
+}
+
+.bloc-sql[hidden] {
+  display: none;
+}
+
+.bloc-sql-entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 14px;
+  border-bottom: 2px solid var(--blanc);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.bloc-sql-entete button {
+  background: var(--noir);
+  color: var(--blanc);
+  border: 2px solid var(--blanc);
+  padding: 4px 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.bloc-sql pre {
+  margin: 0;
+  padding: 14px 16px;
+  max-height: 30vh;
+  overflow: auto;
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  user-select: text;
+}
+
+.bloc-sql.replie pre {
+  display: none;
+}
+
+.bloc-sql.replie .bloc-sql-entete {
+  border-bottom: none;
+}
+
+.sql-keyword { font-weight: 700; }
+.sql-string  { text-decoration: underline; text-underline-offset: 3px; }
+.sql-comment { color: #aaa; font-style: italic; }
 </style>
 </head>
 <body data-ecran="attente">
@@ -661,6 +728,14 @@ body[data-ecran="panne"] .point-statut {
       <p class="intro" id="attente-message">La démo se prépare.</p>
       <div class="chrono-valeur chrono-grand" id="attente-chrono" hidden>0:00</div>
     </section>
+    <!-- Commande SQL en cours : sert de support à l'animateur pour expliquer -->
+    <section id="bloc-sql" class="bloc-sql" hidden>
+      <div class="bloc-sql-entete">
+        <span id="sql-titre"></span>
+        <button id="btn-sql-replier" type="button">Masquer</button>
+      </div>
+      <pre><code id="sql-code"></code></pre>
+    </section>
   </main>
 
   <!-- Panneau animateur : Ctrl+Maj+L, ou 5 clics rapides sur le logo -->
@@ -685,6 +760,7 @@ body[data-ecran="panne"] .point-statut {
     const DUREE = { rechercheLente: 6000, rebuild: 5000, backupDiff: 7000, incident: 1500,
                     full: 3200, diff: 900, log: 400, reset: 8000 };
     const JEUX = [{"jeux_id": 1, "titre": "The Legend of Zelda: Breath of the Wild", "plateforme": "Switch", "genre": "Aventure", "prix": 59.9, "editeur": "Nintendo", "annee": 2017}, {"jeux_id": 2, "titre": "Super Mario Odyssey", "plateforme": "Switch", "genre": "Plateforme", "prix": 59.9, "editeur": "Nintendo", "annee": 2017}, {"jeux_id": 3, "titre": "Mario Kart 8 Deluxe", "plateforme": "Switch", "genre": "Course", "prix": 59.9, "editeur": "Nintendo", "annee": 2017}, {"jeux_id": 4, "titre": "Animal Crossing: New Horizons", "plateforme": "Switch", "genre": "Simulation", "prix": 59.9, "editeur": "Nintendo", "annee": 2020}, {"jeux_id": 5, "titre": "Splatoon 3", "plateforme": "Switch", "genre": "Tir", "prix": 59.9, "editeur": "Nintendo", "annee": 2022}, {"jeux_id": 6, "titre": "Super Smash Bros. Ultimate", "plateforme": "Switch", "genre": "Combat", "prix": 59.9, "editeur": "Nintendo", "annee": 2018}, {"jeux_id": 7, "titre": "Metroid Dread", "plateforme": "Switch", "genre": "Metroidvania", "prix": 49.9, "editeur": "Nintendo", "annee": 2021}, {"jeux_id": 8, "titre": "Pokémon Écarlate", "plateforme": "Switch", "genre": "RPG", "prix": 59.9, "editeur": "Game Freak", "annee": 2022}, {"jeux_id": 9, "titre": "Minecraft", "plateforme": "PC", "genre": "Bac à sable", "prix": 29.9, "editeur": "Mojang", "annee": 2011}, {"jeux_id": 10, "titre": "Hollow Knight", "plateforme": "PC", "genre": "Metroidvania", "prix": 14.99, "editeur": "Team Cherry", "annee": 2017}, {"jeux_id": 11, "titre": "Celeste", "plateforme": "PC", "genre": "Plateforme", "prix": 19.99, "editeur": "Maddy Makes Games", "annee": 2018}, {"jeux_id": 12, "titre": "Hades", "plateforme": "PC", "genre": "Roguelike", "prix": 24.99, "editeur": "Supergiant Games", "annee": 2020}, {"jeux_id": 13, "titre": "Stardew Valley", "plateforme": "PC", "genre": "Simulation", "prix": 13.99, "editeur": "ConcernedApe", "annee": 2016}, {"jeux_id": 14, "titre": "The Witcher 3: Wild Hunt", "plateforme": "PC", "genre": "RPG", "prix": 39.99, "editeur": "CD Projekt Red", "annee": 2015}, {"jeux_id": 15, "titre": "Cyberpunk 2077", "plateforme": "PC", "genre": "RPG", "prix": 59.99, "editeur": "CD Projekt Red", "annee": 2020}, {"jeux_id": 16, "titre": "Elden Ring", "plateforme": "PC", "genre": "RPG", "prix": 59.99, "editeur": "FromSoftware", "annee": 2022}, {"jeux_id": 17, "titre": "Dark Souls III", "plateforme": "PC", "genre": "RPG", "prix": 39.99, "editeur": "FromSoftware", "annee": 2016}, {"jeux_id": 18, "titre": "Baldur's Gate 3", "plateforme": "PC", "genre": "RPG", "prix": 59.99, "editeur": "Larian Studios", "annee": 2023}, {"jeux_id": 19, "titre": "Hogwarts Legacy", "plateforme": "PC", "genre": "RPG", "prix": 59.99, "editeur": "Avalanche Software", "annee": 2023}, {"jeux_id": 20, "titre": "Red Dead Redemption 2", "plateforme": "PC", "genre": "Action-aventure", "prix": 59.99, "editeur": "Rockstar Games", "annee": 2018}, {"jeux_id": 21, "titre": "Grand Theft Auto V", "plateforme": "PC", "genre": "Action-aventure", "prix": 29.99, "editeur": "Rockstar Games", "annee": 2015}, {"jeux_id": 22, "titre": "Portal 2", "plateforme": "PC", "genre": "Puzzle", "prix": 9.99, "editeur": "Valve", "annee": 2011}, {"jeux_id": 23, "titre": "Half-Life: Alyx", "plateforme": "PC", "genre": "Tir", "prix": 49.99, "editeur": "Valve", "annee": 2020}, {"jeux_id": 24, "titre": "Rocket League", "plateforme": "PC", "genre": "Sport", "prix": 19.99, "editeur": "Psyonix", "annee": 2015}, {"jeux_id": 25, "titre": "Tetris Effect", "plateforme": "PC", "genre": "Puzzle", "prix": 29.99, "editeur": "Enhance", "annee": 2018}, {"jeux_id": 26, "titre": "Cuphead", "plateforme": "PC", "genre": "Run and gun", "prix": 19.99, "editeur": "Studio MDHR", "annee": 2017}, {"jeux_id": 27, "titre": "Undertale", "plateforme": "PC", "genre": "RPG", "prix": 9.99, "editeur": "Toby Fox", "annee": 2015}, {"jeux_id": 28, "titre": "Subnautica", "plateforme": "PC", "genre": "Survie", "prix": 29.99, "editeur": "Unknown Worlds", "annee": 2018}, {"jeux_id": 29, "titre": "Street Fighter 6", "plateforme": "PC", "genre": "Combat", "prix": 49.99, "editeur": "Capcom", "annee": 2023}, {"jeux_id": 30, "titre": "Alan Wake 2", "plateforme": "PC", "genre": "Horreur", "prix": 59.99, "editeur": "Remedy", "annee": 2023}, {"jeux_id": 31, "titre": "God of War", "plateforme": "PS4", "genre": "Action-aventure", "prix": 49.99, "editeur": "Santa Monica Studio", "annee": 2018}, {"jeux_id": 32, "titre": "Horizon Zero Dawn", "plateforme": "PS4", "genre": "Action-aventure", "prix": 19.99, "editeur": "Guerrilla Games", "annee": 2017}, {"jeux_id": 33, "titre": "Marvel's Spider-Man", "plateforme": "PS4", "genre": "Action-aventure", "prix": 39.99, "editeur": "Insomniac Games", "annee": 2018}, {"jeux_id": 34, "titre": "The Last of Us Part II", "plateforme": "PS4", "genre": "Action-aventure", "prix": 39.99, "editeur": "Naughty Dog", "annee": 2020}, {"jeux_id": 35, "titre": "Gran Turismo 7", "plateforme": "PS5", "genre": "Course", "prix": 69.99, "editeur": "Polyphony Digital", "annee": 2022}, {"jeux_id": 36, "titre": "Astro Bot", "plateforme": "PS5", "genre": "Plateforme", "prix": 59.99, "editeur": "Team Asobi", "annee": 2024}, {"jeux_id": 37, "titre": "Ghost of Tsushima", "plateforme": "PS5", "genre": "Action-aventure", "prix": 59.99, "editeur": "Sucker Punch", "annee": 2020}, {"jeux_id": 38, "titre": "Resident Evil 4", "plateforme": "PS5", "genre": "Horreur", "prix": 39.99, "editeur": "Capcom", "annee": 2023}, {"jeux_id": 39, "titre": "EA Sports FC 25", "plateforme": "PS5", "genre": "Sport", "prix": 69.99, "editeur": "EA Sports", "annee": 2024}, {"jeux_id": 40, "titre": "Forza Horizon 5", "plateforme": "Xbox", "genre": "Course", "prix": 59.99, "editeur": "Playground Games", "annee": 2021}, {"jeux_id": 41, "titre": "Halo Infinite", "plateforme": "Xbox", "genre": "Tir", "prix": 59.99, "editeur": "343 Industries", "annee": 2021}, {"jeux_id": 42, "titre": "Gears 5", "plateforme": "Xbox", "genre": "Tir", "prix": 39.99, "editeur": "The Coalition", "annee": 2019}];
+    const SQL = {"jeux": "SELECT TOP (50) jeux_id, titre, plateforme, genre, prix, editeur, anneeSortie\nFROM LootTable.dbo.t_jeux\nWHERE titre LIKE '%{texte}%' OR genre LIKE '%{texte}%' OR plateforme LIKE '%{texte}%'\nORDER BY titre;", "offrir": "-- Tout ou rien : si une des deux lignes échoue, rien n'est enregistré\nBEGIN TRANSACTION;\n\nINSERT INTO LootTable.dbo.t_joueur (pseudo, dateCreation)\nVALUES ('{ami}', SYSDATETIME());\n\nINSERT INTO LootTable.dbo.t_achats (jeux_id, joueur_id, prixPaye, dateAchat, offertPar)\nVALUES ({jeux_id}, SCOPE_IDENTITY(), {prix}, SYSDATETIME(), '{visiteur}');\n\nCOMMIT TRANSACTION;", "joueur": "SELECT joueur_id, pseudo, dateCreation\nFROM LootTable.dbo.t_joueur\nWHERE pseudo = '{pseudo}';", "index": "/* 04a - ÉTAPE 4 de la démo : l'animateur active l'index.\n   À mesurer en répétition : la durée du REBUILD sur 50 M de lignes (prévoir un discours d'attente). */\nUSE LootTable;\nGO\nALTER INDEX idx_pseudo ON dbo.t_joueur REBUILD WITH (SORT_IN_TEMPDB = ON, MAXDOP = 0);\nGO\n\n/* 04b - À lancer juste après le REBUILD (pendant que le visiteur relance sa recherche).\n   Le LOG0 « jetable » évite que le log du REBUILD (très gros) se retrouve dans le LOG1 de l'incident. */\nUSE master;\nGO\nBACKUP LOG LootTable\nTO DISK = N'C:\\LootTable\\Backup\\LootTable_LOG0.bak' WITH INIT, FORMAT, COMPRESSION, CHECKSUM;\nGO\nBACKUP DATABASE LootTable\nTO DISK = N'C:\\LootTable\\Backup\\LootTable_DIFF.bak' WITH DIFFERENTIAL, INIT, FORMAT, COMPRESSION, CHECKSUM, STATS = 20;\nGO", "restauration": "/* 06 - RESTAURATION EN DIRECT par l'animateur : FULL -> DIFF -> LOG (STOPAT).\n   STOPAT = fin du dernier backup de log (lu dans msdb). On peut aussi saisir l'heure à la main. */\nUSE master;\nGO\nDECLARE @stopat DATETIME =\n    (SELECT TOP (1) backup_finish_date FROM msdb.dbo.backupset\n     WHERE database_name = N'LootTable' AND type = 'L'\n     ORDER BY backup_finish_date DESC);\nPRINT CONCAT('STOPAT = ', CONVERT(VARCHAR(23), @stopat, 121));\n\nRESTORE DATABASE LootTable FROM DISK = N'C:\\LootTable\\Backup\\LootTable_FULL.bak'\n    WITH FILE = 1, NORECOVERY, REPLACE, STATS = 20;\n\nRESTORE DATABASE LootTable FROM DISK = N'C:\\LootTable\\Backup\\LootTable_DIFF.bak'\n    WITH FILE = 1, NORECOVERY, STATS = 20;\n\nRESTORE LOG LootTable FROM DISK = N'C:\\LootTable\\Backup\\LootTable_LOG1.bak'\n    WITH FILE = 1, STOPAT = @stopat, RECOVERY;\nGO\n-- Reveal : l'achat et le pseudo de l'ami sont revenus\nUSE LootTable;\nSELECT TOP (5) a.achats_id, j.pseudo AS ami, g.titre, a.offertPar, a.dateAchat\nFROM dbo.t_achats a\nJOIN dbo.t_joueur j ON j.joueur_id = a.joueur_id\nJOIN dbo.t_jeux   g ON g.jeux_id   = a.jeux_id\nORDER BY a.achats_id DESC;", "reset": "/* 07 - RESET entre deux visiteurs : restaure l'état GOLDEN puis recrée la base de la chaîne FULL.\n   Durée : ~1-2 min (restore + backup full). À lancer pendant que le visiteur suivant est accueilli.\n   Fonctionne que la base existe, soit en panne ou soit détachée. */\nUSE master;\nGO\nIF DB_ID(N'LootTable') IS NOT NULL\n    ALTER DATABASE LootTable SET SINGLE_USER WITH ROLLBACK IMMEDIATE;\nGO\nRESTORE DATABASE LootTable FROM DISK = N'C:\\LootTable\\Backup\\LootTable_GOLDEN.bak'\n    WITH FILE = 1, REPLACE, RECOVERY, STATS = 20;\nGO\nALTER DATABASE LootTable SET MULTI_USER;\nALTER DATABASE LootTable SET RECOVERY FULL;\nGO\n-- Nouveau FULL : point de départ de la chaîne FULL/DIFF/LOG du prochain visiteur\nBACKUP DATABASE LootTable\nTO DISK = N'C:\\LootTable\\Backup\\LootTable_FULL.bak' WITH INIT, FORMAT, COMPRESSION, CHECKSUM, STATS = 20;\nGO\n-- Contrôle : l'index doit être désactivé (is_disabled = 1) et t_achats vide\nUSE LootTable;\nSELECT name, is_disabled FROM sys.indexes WHERE object_id = OBJECT_ID('dbo.t_joueur') AND name = 'idx_pseudo';\nSELECT COUNT(*) AS nb_achats FROM dbo.t_achats;"};
     const attendre = (ms) => new Promise((r) => setTimeout(r, ms));
     const alea = (a, b) => Math.round(a + Math.random() * (b - a));
 
@@ -706,6 +782,9 @@ body[data-ecran="panne"] .point-statut {
         if (s.op) return { ...base, occupe: true, etat: null };
         return { ...base, occupe: false, etat: s.db,
                  ...(s.db === "en_ligne" ? { index_desactive: !s.indexActif } : {}) };
+      },
+      async get_sql(nom) {
+        return nom in SQL ? { success: true, sql: SQL[nom] } : { success: false, error: "Commande inconnue : " + nom };
       },
       async reessayer_connexion() { return this.get_status(); },
       async rechercher_jeux(texte) {
@@ -769,7 +848,7 @@ body[data-ecran="panne"] .point-statut {
     // Étiquette « hors ligne » + déclenchement de l'initialisation de app.js
     const badge = document.createElement("div");
     badge.textContent = "MODE DÉMO HORS LIGNE — aucune base de données — panneau animateur : F9 ou Ctrl+Maj+L";
-    badge.style.cssText = "position:fixed;left:0;bottom:0;background:#000;color:#fff;font:11px Helvetica,Arial,sans-serif;padding:4px 10px;z-index:100";
+    badge.style.cssText = "position:fixed;left:0;top:0;background:#000;color:#fff;font:11px Helvetica,Arial,sans-serif;padding:4px 10px;z-index:100";
     document.body.append(badge);
     window.addEventListener("load", () => {
       window.dispatchEvent(new Event("pywebviewready"));
@@ -826,6 +905,11 @@ body[data-ecran="panne"] .point-statut {
     attenteTitre: $("attente-titre"),
     attenteMessage: $("attente-message"),
     attenteChrono: $("attente-chrono"),
+    // commande SQL affichée
+    blocSql: $("bloc-sql"),
+    sqlTitre: $("sql-titre"),
+    sqlCode: $("sql-code"),
+    btnSqlReplier: $("btn-sql-replier"),
     // animateur
     panneau: $("panneau-animateur"),
     animStatut: $("anim-statut"),
@@ -849,6 +933,8 @@ body[data-ecran="panne"] .point-statut {
     sauvegarde: null,
     confirmationReset: null,
     sequenceJeux: 0,
+    sequenceSql: 0,
+    modelesSql: {},
     pollHandle: null,
     chronoHandle: null,
   };
@@ -879,6 +965,85 @@ body[data-ecran="panne"] .point-statut {
     if (classe) n.className = classe;
     if (texte !== undefined) n.textContent = texte;
     return n;
+  }
+
+  // ------------------------------------------------------------------ //
+  // Commande SQL affichée à l'écran (support de l'animateur)
+  // ------------------------------------------------------------------ //
+  function surlignerSql(sql) {
+    const echap = (t) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const motif =
+      /(\/\*[\s\S]*?\*\/|--[^\n]*)|(N?'(?:[^']|'')*')|(\b(?:USE|GO|ALTER|INDEX|REBUILD|DATABASE|SET|SINGLE_USER|MULTI_USER|WITH|ROLLBACK|IMMEDIATE|BACKUP|LOG|RESTORE|FROM|DISK|TO|NORECOVERY|RECOVERY|REPLACE|STOPAT|INIT|FORMAT|COMPRESSION|CHECKSUM|DIFFERENTIAL|DELETE|INSERT|INTO|VALUES|SELECT|WHERE|AND|OR|LIKE|ORDER|BY|TOP|AS|JOIN|ON|DECLARE|PRINT|BEGIN|TRANSACTION|COMMIT|EXEC|ON|FILE|STATS|SYSDATETIME|SCOPE_IDENTITY)\b)/gi;
+    let sortie = "";
+    let dernier = 0;
+    let m;
+    while ((m = motif.exec(sql)) !== null) {
+      sortie += echap(sql.slice(dernier, m.index));
+      const [complet, commentaire, chaine] = m;
+      const classe = commentaire ? "sql-comment" : chaine ? "sql-string" : "sql-keyword";
+      sortie += `<span class="${classe}">${echap(complet)}</span>`;
+      dernier = m.index + complet.length;
+    }
+    return sortie + echap(sql.slice(dernier));
+  }
+
+  async function modeleSql(nom) {
+    if (!(nom in etat.modelesSql)) {
+      const rep = await api().get_sql(nom);
+      etat.modelesSql[nom] = rep.success ? rep.sql : `-- Commande indisponible : ${rep.error}`;
+    }
+    return etat.modelesSql[nom];
+  }
+
+  /** Remplace les {valeurs} d'un modèle (apostrophes doublées, comme en T-SQL). */
+  function remplirSql(modele, valeurs) {
+    return modele.replace(/\{(\w+)\}/g, (m, cle) =>
+      cle in valeurs ? String(valeurs[cle]).replace(/'/g, "''") : m
+    );
+  }
+
+  async function montrerSql(titre, nom, valeurs, prefixe) {
+    const sequence = ++etat.sequenceSql;
+    let sql = await modeleSql(nom);
+    if (sequence !== etat.sequenceSql) return; // une commande plus récente a pris le relais
+    if (valeurs) sql = remplirSql(sql, valeurs);
+    if (prefixe) sql = prefixe + "\n" + sql;
+    el.sqlTitre.textContent = titre;
+    el.sqlCode.innerHTML = surlignerSql(sql);
+    el.blocSql.hidden = false;
+  }
+
+  function cacherSql() {
+    etat.sequenceSql++;
+    el.blocSql.hidden = true;
+  }
+
+  function majSqlCatalogue() {
+    montrerSql("Commande SQL — recherche d'un jeu (petite table : très rapide)", "jeux", {
+      texte: el.champJeu.value.trim(),
+    });
+  }
+
+  function majSqlOffrir() {
+    if (!etat.jeu) return;
+    montrerSql("Commande SQL — offrir le jeu : deux ajouts dans une seule transaction", "offrir", {
+      ami: el.champAmi.value.trim() || "…",
+      visiteur: el.champVisiteur.value.trim() || "…",
+      jeux_id: etat.jeu.jeux_id,
+      prix: etat.jeu.prix,
+    });
+  }
+
+  function majSqlRecherche() {
+    const prefixe = etat.indexActif
+      ? "-- Index idx_pseudo ACTIF : SQL Server va directement à la bonne ligne."
+      : "-- Index idx_pseudo DÉSACTIVÉ : SQL Server doit lire les 50 millions de lignes.";
+    montrerSql(
+      "Commande SQL — recherche de l'ami parmi 50 millions de joueurs",
+      "joueur",
+      { pseudo: el.champRecherche.value.trim() || "…" },
+      prefixe
+    );
   }
 
   function afficherErreur(message) {
@@ -972,6 +1137,7 @@ body[data-ecran="panne"] .point-statut {
     el.catalogueInfo.textContent = rep.jeux.length
       ? ""
       : "Aucun jeu ne correspond. Essaie un autre mot !";
+    if (etat.ecran === "catalogue") majSqlCatalogue();
   }
 
   function carteJeu(jeu) {
@@ -997,6 +1163,7 @@ body[data-ecran="panne"] .point-statut {
     );
     el.amiErreur.hidden = true;
     afficherEcran("ami");
+    majSqlOffrir();
     (el.champVisiteur.value ? el.champAmi : el.champVisiteur).focus();
   }
 
@@ -1052,6 +1219,7 @@ body[data-ecran="panne"] .point-statut {
     el.rechercheTitre.textContent = "Cadeau enregistré !";
     el.rechercheMessage.textContent = "";
     afficherEcran("recherche");
+    majSqlRecherche();
   }
 
   async function rechercherAmi() {
@@ -1067,6 +1235,7 @@ body[data-ecran="panne"] .point-statut {
     cible.textContent = "…";
     cible.classList.add("en-cours");
     el.rechercheMessage.textContent = "Recherche en cours parmi 50 millions de joueurs…";
+    majSqlRecherche();
     try {
       const rep = await api().rechercher_joueur(pseudo);
       cible.classList.remove("en-cours");
@@ -1148,6 +1317,7 @@ body[data-ecran="panne"] .point-statut {
   function montrerPanne(avecEffet) {
     el.panneChrono.hidden = true;
     el.panneMessage.textContent = "Appelle l'animateur : il va tout réparer.";
+    cacherSql(); // on ne montre pas la cause de la panne avant la réparation
     afficherEcran("panne");
     if (avecEffet) {
       el.overlay.classList.remove("actif");
@@ -1165,6 +1335,7 @@ body[data-ecran="panne"] .point-statut {
     majBoutons();
     el.panneMessage.textContent = "Réparation en cours… SQL Server remet les sauvegardes dans l'ordre.";
     demarrerChrono(el.panneChrono);
+    montrerSql("Commande SQL — restauration : FULL, puis DIFF, puis LOG", "restauration");
     try {
       const rep = await api().restaurer();
       arreterChrono();
@@ -1231,6 +1402,7 @@ body[data-ecran="panne"] .point-statut {
     etat.enCours = true;
     el.btnIndex.textContent = "Activation…";
     el.rechercheMessage.textContent = "L'animateur prépare l'index… un peu de patience !";
+    montrerSql("Commande SQL — création de l'index (04a), puis sauvegarde en arrière-plan (04b)", "index");
     majBoutons();
     try {
       const rep = await api().activer_index();
@@ -1275,6 +1447,7 @@ body[data-ecran="panne"] .point-statut {
     document.body.classList.remove("tremble");
     demarrerChrono(el.attenteChrono);
     afficherEcran("attente");
+    montrerSql("Commande SQL — remise à zéro pour le visiteur suivant", "reset");
     try {
       const rep = await api().reset();
       arreterChrono();
@@ -1362,7 +1535,16 @@ body[data-ecran="panne"] .point-statut {
       clearTimeout(minuteur);
       minuteur = setTimeout(chargerJeux, DELAI_RECHERCHE_JEU_MS);
     });
-    el.btnRetourCatalogue.addEventListener("click", () => afficherEcran("catalogue"));
+    el.btnRetourCatalogue.addEventListener("click", () => {
+      afficherEcran("catalogue");
+      majSqlCatalogue();
+    });
+    el.btnSqlReplier.addEventListener("click", () => {
+      const replie = el.blocSql.classList.toggle("replie");
+      el.btnSqlReplier.textContent = replie ? "Afficher" : "Masquer";
+    });
+    [el.champVisiteur, el.champAmi].forEach((c) => c.addEventListener("input", majSqlOffrir));
+    el.champRecherche.addEventListener("input", majSqlRecherche);
     el.btnOffrir.addEventListener("click", offrirJeu);
     [el.champVisiteur, el.champAmi].forEach((c) =>
       c.addEventListener("keydown", (e) => e.key === "Enter" && offrirJeu())

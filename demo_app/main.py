@@ -43,6 +43,39 @@ SCRIPT_INCIDENT = "05_incident.sql"
 SCRIPT_RESTORE = "06_restore_chain.sql"
 SCRIPT_RESET = "07_reset.sql"
 
+# Commandes affichées à l'écran pour expliquer les étapes de l'appli (les {valeurs}
+# sont remplies côté JavaScript). Les scripts de l'animateur, eux, sont lus dans Script/.
+SQL_AFFICHE = {
+    "jeux": (
+        "SELECT TOP (50) jeux_id, titre, plateforme, genre, prix, editeur, anneeSortie\n"
+        "FROM LootTable.dbo.t_jeux\n"
+        "WHERE titre LIKE '%{texte}%' OR genre LIKE '%{texte}%' OR plateforme LIKE '%{texte}%'\n"
+        "ORDER BY titre;"
+    ),
+    "offrir": (
+        "-- Tout ou rien : si une des deux lignes échoue, rien n'est enregistré\n"
+        "BEGIN TRANSACTION;\n"
+        "\n"
+        "INSERT INTO LootTable.dbo.t_joueur (pseudo, dateCreation)\n"
+        "VALUES ('{ami}', SYSDATETIME());\n"
+        "\n"
+        "INSERT INTO LootTable.dbo.t_achats (jeux_id, joueur_id, prixPaye, dateAchat, offertPar)\n"
+        "VALUES ({jeux_id}, SCOPE_IDENTITY(), {prix}, SYSDATETIME(), '{visiteur}');\n"
+        "\n"
+        "COMMIT TRANSACTION;"
+    ),
+    "joueur": (
+        "SELECT joueur_id, pseudo, dateCreation\n"
+        "FROM LootTable.dbo.t_joueur\n"
+        "WHERE pseudo = '{pseudo}';"
+    ),
+}
+SQL_SCRIPTS = {
+    "index": [SCRIPT_INDEX, SCRIPT_BACKUP_DIFF],
+    "restauration": [SCRIPT_RESTORE],
+    "reset": [SCRIPT_RESET],
+}
+
 TYPES_RESTAURATION = {"D": "FULL", "I": "DIFF", "L": "LOG"}
 LONGUEUR_PSEUDO_MAX = 50
 
@@ -383,6 +416,20 @@ class Api:
     # ------------------------------------------------------------------ #
     # API exposée au JavaScript
     # ------------------------------------------------------------------ #
+    def get_sql(self, nom):
+        """Texte SQL à afficher à l'écran pour l'étape `nom` (aucun accès à la base)."""
+        try:
+            if nom in SQL_AFFICHE:
+                return {"success": True, "sql": SQL_AFFICHE[nom]}
+            if nom not in SQL_SCRIPTS:
+                raise ValueError(f"Commande inconnue : {nom}")
+            if not self._config:
+                raise FileNotFoundError("config.json non chargé.")
+            textes = [self._lire_script(f).strip() for f in SQL_SCRIPTS[nom]]
+            return {"success": True, "sql": "\n\n".join(textes)}
+        except Exception as e:  # noqa: BLE001
+            return {"success": False, "error": str(e)}
+
     @_api
     def get_status(self):
         base = {
