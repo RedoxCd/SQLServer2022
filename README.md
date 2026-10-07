@@ -21,7 +21,7 @@ Les sauvegardes ne sont **pas compressées** (SQL Server Express ne supporte pas
 
 ## Sur un autre PC (Sébeillon)
 1. Cloner le dépôt : `git clone https://github.com/RedoxCd/SQLServer2022.git`
-2. Installer **Python 3** et l'**ODBC Driver 18 for SQL Server**, puis `pip install -r installer_app/requirements.txt` (identique à `demo_app/requirements.txt`).
+2. Double-cliquer sur **`installer_prerequis.bat`** : il installe (via `winget`) Python 3.12, l'**ODBC Driver 18 for SQL Server**, WebView2 si besoin, puis les modules Python (`pywebview`, `pyodbc`). Il demande les droits administrateur ; il peut être relancé sans risque.
 3. Vérifier le nom du serveur dans `installer_app/config.json` et `demo_app/config.json` (par défaut `localhost\SQLEXPRESS`).
 4. Lancer `lancer_installateur.bat` : **25 Go libres** sont requis sur le disque. Puis `lancer_activite.bat`.
 
