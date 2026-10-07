@@ -231,7 +231,6 @@ class Api:
         connexion repasse sur master à la fin."""
         resultats = []
         cursor = conn.cursor()
-        cursor.timeout = 0
         try:
             for bases, requete in self._decouper(texte_sql):
                 for base in bases:
