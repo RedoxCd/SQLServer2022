@@ -3,7 +3,7 @@ GO
 
 CREATE OR ALTER PROCEDURE dbo.sp_GenererDonneesLootTable
     @NbJeux      INT = 2000,
-    @NbJoueurs   INT = 50000000,
+    @NbJoueurs   INT = 10000000,
     @TailleLot   INT = 500000
 AS
 BEGIN
@@ -48,7 +48,7 @@ BEGIN
         2005 + (N % 22)
     FROM dbo.Nombres WHERE N <= @NbJeux;
 
-    -- 50 millions de joueurs
+    -- 10 millions de joueurs
     DECLARE @i INT = 0;
     WHILE @i < @NbJoueurs
     BEGIN

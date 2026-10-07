@@ -221,7 +221,7 @@
             creer(
               "div",
               "barre-legende",
-              `${formatNombre(p.joueurs)} joueurs sur ${formatNombre(p.total_joueurs)} (${Math.floor(pct)} %) — mise à jour par paliers de 5 millions`
+              `${formatNombre(p.joueurs)} joueurs sur ${formatNombre(p.total_joueurs)} (${Math.floor(pct)} %) — mise à jour par paliers de 1 million`
             )
           );
         }

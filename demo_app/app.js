@@ -177,9 +177,9 @@
   function majSqlRecherche() {
     const prefixe = etat.indexActif
       ? "-- Index idx_pseudo ACTIF : SQL Server va directement à la bonne ligne."
-      : "-- Index idx_pseudo DÉSACTIVÉ : SQL Server doit lire les 50 millions de lignes.";
+      : "-- Index idx_pseudo DÉSACTIVÉ : SQL Server doit lire les 10 millions de lignes.";
     montrerSql(
-      "Commande SQL — recherche de l'ami parmi 50 millions de joueurs",
+      "Commande SQL — recherche de l'ami parmi 10 millions de joueurs",
       "joueur",
       { pseudo: el.champRecherche.value.trim() || "…" },
       prefixe
@@ -374,7 +374,7 @@
     const texteAvant = cible.textContent;
     cible.textContent = "…";
     cible.classList.add("en-cours");
-    el.rechercheMessage.textContent = "Recherche en cours parmi 50 millions de joueurs…";
+    el.rechercheMessage.textContent = "Recherche en cours parmi 10 millions de joueurs…";
     majSqlRecherche();
     try {
       const rep = await api().rechercher_joueur(pseudo);

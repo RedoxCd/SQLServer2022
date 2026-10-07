@@ -45,7 +45,7 @@
         const achat = { achats_id: s.achats.length + 1, ami, titre: jeu.titre, offertPar: visiteur,
                         dateAchat: new Date().toISOString().slice(0, 19).replace("T", " "), prix: jeu.prix };
         s.achats.push(achat);
-        return { success: true, achats_id: achat.achats_id, joueur_id: 50000000 + achat.achats_id, prix_paye: jeu.prix };
+        return { success: true, achats_id: achat.achats_id, joueur_id: 10000000 + achat.achats_id, prix_paye: jeu.prix };
       },
       async rechercher_joueur(pseudo) {
         const ms = s.indexActif ? alea(6, 18) : DUREE.rechercheLente + alea(-400, 400);
@@ -53,7 +53,7 @@
         await attendre(ms);
         const trouve = s.joueurs.has((pseudo || "").trim().toLowerCase());
         return { success: true, trouve, duree_ms: ms, index_desactive,
-                 joueurs: trouve ? [{ joueur_id: 50000001, pseudo, dateCreation: "" }] : [] };
+                 joueurs: trouve ? [{ joueur_id: 10000001, pseudo, dateCreation: "" }] : [] };
       },
       async activer_index() {
         const debut = performance.now();
