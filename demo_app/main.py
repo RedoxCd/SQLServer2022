@@ -617,7 +617,7 @@ class Api:
 
     @_api
     def restaurer(self):
-        """06 : FULL -> DIFF -> LOG (STOPAT). Renvoie les durées de chaque
+        """06 : FULL -> DIFF -> LOG. Renvoie les durées de chaque
         restauration (lues dans msdb) et le reveal (derniers achats)."""
         script = self._lire_script(SCRIPT_RESTORE)
         self._verifier_fichiers(script)

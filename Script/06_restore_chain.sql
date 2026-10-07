@@ -1,13 +1,8 @@
-﻿/* 06 - RESTAURATION EN DIRECT par l'animateur : FULL -> DIFF -> LOG (STOPAT).
-   STOPAT = fin du dernier backup de log (lu dans msdb). On peut aussi saisir l'heure à la main. */
+﻿/* 06 - RESTAURATION EN DIRECT par l'animateur : FULL -> DIFF -> LOG.
+   Le log est rejoué jusqu'au bout (sans STOPAT) : l'incident 05 est une panne (base détachée),
+   pas une suppression de données, donc il n'y a aucun point « avant l'incident » à retrouver. */
 USE master;
 GO
-DECLARE @stopat DATETIME =
-    (SELECT TOP (1) backup_finish_date FROM msdb.dbo.backupset
-     WHERE database_name = N'LootTable' AND type = 'L'
-     ORDER BY backup_finish_date DESC);
-PRINT CONCAT('STOPAT = ', CONVERT(VARCHAR(23), @stopat, 121));
-
 RESTORE DATABASE LootTable FROM DISK = N'C:\LootTable\Backup\LootTable_FULL.bak'
     WITH FILE = 1, NORECOVERY, REPLACE, STATS = 20;
 
@@ -15,7 +10,7 @@ RESTORE DATABASE LootTable FROM DISK = N'C:\LootTable\Backup\LootTable_DIFF.bak'
     WITH FILE = 1, NORECOVERY, STATS = 20;
 
 RESTORE LOG LootTable FROM DISK = N'C:\LootTable\Backup\LootTable_LOG1.bak'
-    WITH FILE = 1, STOPAT = @stopat, RECOVERY;
+    WITH FILE = 1, RECOVERY;
 GO
 -- Reveal : l'achat et le pseudo de l'ami sont revenus
 USE LootTable;
