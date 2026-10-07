@@ -49,7 +49,7 @@ The scripts below are the reference of the demo; the application reads them dire
 | 4 | The host clicks « Activer l'index », then the DIFF backup starts in the background | `04a_activer_index.sql`, `04b_backup_diff.sql` |
 | 5 | Same search: almost instant, both durations side by side | app |
 | 6 | The visitor clicks « OK »: the app writes a validation in the database, then silently triggers the incident (log backup, detach) | `05_incident.sql` |
-| 7 | The host clicks « Restaurer »: FULL → DIFF → LOG (STOPAT), durations displayed | `06_restore_chain.sql` |
+| 7 | The host clicks « Restaurer »: FULL → DIFF → LOG, durations displayed | `06_restore_chain.sql` |
 | 8 | Reveal: the last purchase and the friend's nickname are back | last SELECT of `06` |
 | 9 | The host clicks « Reset » for the next visitor (1 to 2 min) | `07_reset.sql` |
 
