@@ -1,4 +1,4 @@
-﻿/* 02 - Données : 42 jeux + 50 000 000 joueurs (GENERATE_SERIES, SQL Server 2022)
+﻿/* 02 - Données : 42 jeux + 10 000 000 joueurs (GENERATE_SERIES, SQL Server 2022)
    Durée indicative : quelques minutes. Base en RECOVERY SIMPLE (script 01). */
 USE LootTable;
 SET NOCOUNT ON;
@@ -47,7 +47,7 @@ INSERT INTO dbo.t_jeux (titre, plateforme, genre, prix, editeur, anneeSortie) VA
     (N'Halo Infinite', 'Xbox', N'Tir', 59.99, N'343 Industries', 2021),
     (N'Gears 5', 'Xbox', N'Tir', 39.99, N'The Coalition', 2019);
 GO
-DECLARE @total BIGINT = 50000000, @batch BIGINT = 5000000, @start BIGINT = 1;
+DECLARE @total BIGINT = 10000000, @batch BIGINT = 1000000, @start BIGINT = 1;
 WHILE @start <= @total
 BEGIN
     INSERT INTO dbo.t_joueur WITH (TABLOCK) (pseudo, dateCreation)

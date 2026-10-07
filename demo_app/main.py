@@ -536,7 +536,7 @@ class Api:
 
     @_api
     def rechercher_joueur(self, pseudo):
-        """Recherche exacte dans t_joueur (50 M de lignes). La durée mesurée
+        """Recherche exacte dans t_joueur (10 M de lignes). La durée mesurée
         (ms) couvre exécution + lecture du résultat ; idx_pseudo désactivé =
         lecture complète de la table, activé = accès direct."""
         pseudo = self._pseudo_valide(pseudo, "Pseudo")

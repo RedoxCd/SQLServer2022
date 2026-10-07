@@ -3,7 +3,7 @@
 Fenêtre pywebview (index.html) avec une classe Api exposée au JavaScript :
 vérifie les prérequis puis, en un clic, exécute dans l'ordre
   01_create_database.sql  -> base + tables (DROP DATABASE si elle existe)
-  02_generate_data.sql    -> 42 jeux + 50 000 000 joueurs + idx_pseudo désactivé
+  02_generate_data.sql    -> 42 jeux + 10 000 000 joueurs + idx_pseudo désactivé
   03_golden_backup.sql    -> recovery FULL + sauvegarde GOLDEN
   07_reset.sql            -> restaure GOLDEN et crée le FULL de départ de la chaîne
 Les scripts sont lus tels quels dans Script/ (rien n'est copié ici).
@@ -40,7 +40,7 @@ RE_BACKUP_VERS = re.compile(r"\bTO\s+DISK\s*=\s*N'([^']+)'", re.IGNORECASE)
 
 ETAPES = [
     {"script": "01_create_database.sql", "titre": "Création de la base et des tables"},
-    {"script": "02_generate_data.sql", "titre": "Chargement des 50 millions de joueurs"},
+    {"script": "02_generate_data.sql", "titre": "Chargement des 10 millions de joueurs"},
     {"script": "03_golden_backup.sql", "titre": "Sauvegarde GOLDEN (état initial de la démo)"},
     {"script": "07_reset.sql", "titre": "Préparation de la chaîne de sauvegarde"},
 ]
@@ -48,7 +48,7 @@ ETAPE_JOUEURS = 1  # index de l'étape de chargement des joueurs (sonde de progr
 SCRIPT_GOLDEN = "03_golden_backup.sql"
 SCRIPT_FULL = "07_reset.sql"
 
-TOTAL_JOUEURS = 50_000_000
+TOTAL_JOUEURS = 10_000_000
 TOTAL_JEUX = 42
 ESPACE_MINIMUM_GO_DEFAUT = 25
 INTERVALLE_SONDE_S = 2
@@ -430,7 +430,7 @@ class Api:
                 cursor.execute(SQL_NB_JOUEURS.format(db=self._db), f"{self._db}.dbo.t_joueur")
                 n = cursor.fetchone()[0]
                 n = int(n or 0)
-                ajouter("50 000 000 de joueurs", n == TOTAL_JOUEURS, f"{n:,} lignes dans t_joueur".replace(",", " "))
+                ajouter("10 000 000 de joueurs", n == TOTAL_JOUEURS, f"{n:,} lignes dans t_joueur".replace(",", " "))
                 cursor.execute(f"SELECT COUNT(*) FROM [{self._db}].dbo.t_jeux;")
                 n = cursor.fetchone()[0]
                 ajouter("42 jeux", n == TOTAL_JEUX, f"{n} lignes dans t_jeux")

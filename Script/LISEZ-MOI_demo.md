@@ -1,12 +1,12 @@
 # LootTable - ordre d'exécution
 
-## Installation (une seule fois, ~15-30 min)
+## Installation (une seule fois, quelques minutes : ~5-10 min, à mesurer)
 1. Créer `C:\LootTable\Data` et `C:\LootTable\Backup` (droits d'écriture pour le service SQL Server).
 2. `01_create_database.sql` -> `02_generate_data.sql` -> vérifier `idx_pseudo` is_disabled = 1 -> `03_golden_backup.sql`.
 3. `07_reset.sql` (crée le FULL de la chaîne). La base est prête.
 
 ### SQL Server Express : pas de compression
-Les `BACKUP` n'utilisent pas `COMPRESSION` (non supportée par l'édition Express). Chaque `.bak` pèse donc 3 à 4 Go (GOLDEN, FULL, DIFF) : prévoir **25 Go libres** sur le disque (données + log ~12 Go, sauvegardes ~13 Go).
+Les `BACKUP` n'utilisent pas `COMPRESSION` (non supportée par l'édition Express). Les `.bak` (GOLDEN, FULL, DIFF) ne sont pas compressés : prévoir par précaution **25 Go libres** sur le disque (données + log préalloués ~12 Go + sauvegardes).
 La limite d'Express est de 10 Go de données par base : `01_create_database.sql` crée un fichier de données de 8 Go (croissance 1 Go), à surveiller.
 
 ## Déroulé de la démo
