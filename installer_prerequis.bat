@@ -54,6 +54,7 @@ if defined SQL_OK (
 )
 echo [1/7] Installation de SQL Server 2022 Express - instance %INSTANCE%...
 echo       Cette etape est la plus longue, 10 a 20 minutes.
+echo       Il est normal que rien ne bouge a l'ecran : ne fermez pas la fenetre.
 
 rem a) Un installeur complet est-il deja a cote du script, par ex. sur une cle USB ?
 set "SQLPKG="
@@ -125,7 +126,11 @@ if defined SSMS_OK (
     echo [2/7] SSMS est deja installe.
     goto python
 )
-echo [2/7] Installation de SQL Server Management Studio, 5 a 10 minutes...
+echo [2/7] Installation de SQL Server Management Studio, 10 a 20 minutes...
+echo       SSMS telecharge environ 1 a 2 Go en arriere-plan, SANS barre de progression.
+echo       Il est normal que rien ne bouge a l'ecran : ne fermez pas la fenetre.
+echo       Pour verifier que ca avance : Gestionnaire des taches, processus
+echo       "Visual Studio Installer" avec de l'activite reseau ou disque.
 if defined HAVE_WINGET winget install --id Microsoft.SQLServerManagementStudio.22 %WINGET_OPTS%
 call :has_ssms
 if defined SSMS_OK goto python
