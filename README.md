@@ -1,76 +1,133 @@
-# SQLServer2022
-This project is for the "Porte Ouverte de l'ETML", where people without any IT knowledge will discover the SQL Server 2022 software. The public will have an activity that is 5 to 8 minutes long to complete and have fun.
+# LootTable – Activité SQL Server 2022
 
-The demo uses the **LootTable** database (a video game shop): 10 million players, a small catalogue of games and the purchases (`t_jeux`, `t_joueur`, `t_achats`).
+🇫🇷 [Français](#français) · 🇬🇧 [English](#english)
 
-## Modeling
-If you have any issues understanding how the database works and how the connections between tables are made, you can check **Modelisation/LootTable.loo**. It will open Looping, which is the modeling software that I used. Both MCD and MLD (Merise method) can be checked.
+---
 
-## Installation en un clic
-Pour préparer la base sans lancer les scripts à la main, utilise l'installateur, **puis** l'activité :
+## Français
 
-1. Double-clique sur `lancer_installateur.bat` (ou `python installer_app/main.py`).
-2. Vérifie les prérequis affichés (✔ / ⚠ / ✘) : SQL Server joignable, édition, dossiers `C:\LootTable\Data` et `C:\LootTable\Backup` (créés au besoin), **25 Go libres**, base déjà existante (une confirmation est demandée avant de l'écraser).
-3. Clique sur **« Créer la base »**. L'installateur exécute, dans l'ordre, `01_create_database.sql`, `02_generate_data.sql`, `03_golden_backup.sql` puis `07_reset.sql` (quelques minutes, environ **5 à 10 min** ; étape en cours, temps écoulé et progression des joueurs affichés). En cas d'erreur, le message SQL complet est affiché avec un bouton « Réessayer ».
-4. À la fin, un contrôle automatique affiche « Prêt pour l'activité » (10 000 000 joueurs, 42 jeux, `idx_pseudo` désactivé, `LootTable_GOLDEN.bak` et `LootTable_FULL.bak` présents). Le bouton « Vérifier l'installation » refait ce contrôle sans rien modifier.
-5. Lance l'activité avec `lancer_activite.bat` (ou `python demo_app/main.py`). Si la base n'est pas installée, elle affiche « Base introuvable : lancez d'abord l'installateur ».
+### Présentation
+Activité des **Portes Ouvertes de l'ETML** (projet P_BD_141) pour des visiteurs sans connaissances en informatique. En **5 à 8 minutes**, le visiteur découvre SQL Server 2022 à travers une boutique de jeux vidéo : il cherche un jeu, l'offre à un ami, constate l'effet d'un **index** sur 10 millions de lignes, puis assiste à une **panne** et à la **restauration** de la base.
 
-Les réglages (serveur, dossier **Script/**, dossiers de données et de sauvegardes, espace minimum) sont dans `installer_app/config.json`. `python installer_app/smoke_test.py` lance les vérifications sans rien créer.
+Base **LootTable** : `t_jeux` (42 jeux), `t_joueur` (10 000 000 joueurs), `t_achats`.
 
-Les sauvegardes ne sont **pas compressées** (SQL Server Express ne supporte pas `COMPRESSION`) : les `.bak` sont donc plus volumineux qu'avec compression.
+### Prérequis
+- Windows 10 ou 11 (64 bits), droits **administrateur**
+- **25 Go libres** sur le disque `C:`
+- Internet pour l'installation (ou l'installeur SQL Server sur clé USB, voir plus bas)
 
-## Sur un autre PC (Sébeillon)
-1. Cloner le dépôt : `git clone https://github.com/RedoxCd/SQLServer2022.git`
-2. Double-cliquer sur **`installer_prerequis.bat`** : il installe tout le poste, **même sur un Windows vierge** (via `winget`, ou par téléchargement direct si `winget` est absent ou échoue) : **SQL Server 2022 Express** (instance `SQLEXPRESS`, le compte Windows qui lance le script devient administrateur SQL), **SSMS**, Python 3.12, l'**ODBC Driver 18 for SQL Server**, WebView2, puis les modules Python (`pywebview`, `pyodbc`). Il crée aussi `C:\LootTable\Data` et `C:\LootTable\Backup` avec les droits du service SQL Server, puis teste la connexion. Compter 15 à 30 minutes. Il demande les droits administrateur ; il peut être relancé sans risque.
-   - **Sans Internet** (ou réseau lent) : copier `SQLEXPRADV_x64_FRA.exe` (ou `SQLEXPR_x64_ENU.exe`) à côté du script ou dans un dossier `Installeurs\` : il sera utilisé au lieu du téléchargement.
-3. Vérifier le nom du serveur dans `installer_app/config.json` et `demo_app/config.json` (par défaut `localhost\SQLEXPRESS`).
-4. Lancer `lancer_installateur.bat` : **25 Go libres** sont requis sur le disque. Puis `lancer_activite.bat`.
+### Installation (3 étapes)
+1. **Télécharger le projet** : bouton *Code → Download ZIP* sur GitHub, puis extraire ; ou `git clone https://github.com/RedoxCd/SQLServer2022.git`.
+2. **Double-cliquer sur `installer_prerequis.bat`** (15 à 30 min). Il installe tout, même sur un Windows vierge :
+   - SQL Server 2022 Express (instance `SQLEXPRESS`, le compte Windows actuel devient administrateur SQL)
+   - SSMS, Python 3.12, ODBC Driver 18, WebView2 et les modules Python
+   - les dossiers `C:\LootTable\Data` et `C:\LootTable\Backup`, puis il teste la connexion
 
-## Script
-Everything lives in the **Script/** folder. Create `C:\LootTable\Data` and `C:\LootTable\Backup` (write access for the SQL Server service account) before starting, then run in this order:
+   Il peut être relancé sans risque. **Sans Internet** : placer `SQLEXPRADV_x64_FRA.exe` (ou `SQLEXPR_x64_ENU.exe`) à côté du script ou dans un dossier `Installeurs\`.
+3. **Double-cliquer sur `lancer_installateur.bat`**, puis sur **« Créer la base »** (5 à 10 min). Attendre le message **« Prêt pour l'activité »**.
 
-1. `01_create_database.sql` — creates the LootTable database and its three tables. It has to be executed before any other script or operation.
-2. `02_generate_data.sql` — generates the data (42 real games and 10 million players) and disables `idx_pseudo`.
-3. `03_golden_backup.sql` — the « GOLDEN » backup (initial state of the demo). Before running it, check that `idx_pseudo` is disabled (`is_disabled = 1`): the demo relies on it.
-4. `07_reset.sql` — restores GOLDEN and creates the FULL backup that starts the FULL / DIFF / LOG chain. The database is then ready for the demo.
+Ensuite, l'activité se lance avec **`lancer_activite.bat`**.
 
-### The demo, step by step
-The scripts below are the reference of the demo; the application reads them directly from **Script/** (nothing is copied).
+### Déroulement de l'activité
+| Étape | Ce qui se passe |
+|---|---|
+| 1 | Le visiteur cherche un jeu (petite table, réponse immédiate) |
+| 2 | Il l'offre à un ami : ajout du joueur et de l'achat dans une **transaction** |
+| 3 | Il cherche son ami parmi 10 millions de joueurs **sans index** : c'est lent, le temps est affiché |
+| 4 | L'animateur clique sur **« Activer l'index »** (une sauvegarde différentielle part en arrière-plan) |
+| 5 | Même recherche **avec index** : quasi instantanée, les deux temps sont comparés |
+| 6 | Le visiteur valide : une **panne** survient (la base disparaît) |
+| 7 | L'animateur clique sur **« Restaurer »** : sauvegardes complète → différentielle → journal |
+| 8 | Révélation : l'achat et l'ami sont de retour, aucune donnée perdue |
+| 9 | L'animateur clique sur **« Reset »** pour le visiteur suivant (1 à 2 min) |
 
-| Step | What happens | Script |
-|---|---|---|
-| 1 | The visitor looks for a game (`t_jeux`, small table, fast) | app |
-| 2 | The visitor offers it to a friend: INSERT in `t_joueur` then `t_achats`, in one transaction | app |
-| 3 | The visitor searches the friend in `t_joueur` (10 M rows, `idx_pseudo` disabled): slow, duration displayed | app |
-| 4 | The host clicks « Activer l'index », then the DIFF backup starts in the background | `04a_activer_index.sql`, `04b_backup_diff.sql` |
-| 5 | Same search: almost instant, both durations side by side | app |
-| 6 | The visitor clicks « OK »: the app writes a validation in the database, then silently triggers the incident (log backup, detach) | `05_incident.sql` |
-| 7 | The host clicks « Restaurer »: FULL → DIFF → LOG, durations displayed | `06_restore_chain.sql` |
-| 8 | Reveal: the last purchase and the friend's nickname are back | last SELECT of `06` |
-| 9 | The host clicks « Reset » for the next visitor (1 to 2 min) | `07_reset.sql` |
+La commande SQL exécutée s'affiche en bas de l'écran pour que l'animateur puisse l'expliquer.
 
-`08_verification.sql` contains control queries, and `Script/LISEZ-MOI_demo.md` the execution order and what to measure during rehearsals.
+### Pour l'animateur
+- **Ctrl+Maj+L** (ou 5 clics rapides sur le logo) affiche ou masque les boutons de l'animateur.
+- Faire **« Reset »** après chaque visiteur.
+- `demo_app/demo_hors_ligne.html` : version de démonstration sans base de données, qui s'ouvre dans n'importe quel navigateur.
 
-## Application (demo_app/)
-A pywebview window (Python + pyodbc) that drives the demo.
+### Dépannage
+| Problème | Solution |
+|---|---|
+| « Base introuvable » au lancement de l'activité | Lancer d'abord `lancer_installateur.bat` |
+| SQL Server injoignable | Vérifier le nom du serveur (`localhost\SQLEXPRESS`) dans `installer_app/config.json` et `demo_app/config.json`, ou redémarrer le PC |
+| L'installation de SQL Server échoue | Consulter `C:\Program Files\Microsoft SQL Server\160\Setup Bootstrap\Log\Summary.txt` |
+| La fenêtre de l'activité ne s'ouvre pas | Relancer `installer_prerequis.bat` (WebView2) |
 
-```
-pip install -r demo_app/requirements.txt
-python demo_app/main.py
-```
+### Contenu du dépôt
+| Dossier / fichier | Rôle |
+|---|---|
+| `installer_prerequis.bat` | Installe le poste complet |
+| `lancer_installateur.bat` / `installer_app/` | Crée la base et les sauvegardes |
+| `lancer_activite.bat` / `demo_app/` | L'activité pour les visiteurs |
+| `Script/` | Scripts SQL de l'activité (`01` à `08`), lus directement par les applications |
+| `Modelisation/LootTable.loo` | MCD et MLD (méthode Merise), à ouvrir avec Looping |
 
-Settings are in `demo_app/config.json`:
-- `connexion`: SQL Server instance, driver, authentication. The app stays connected to `master` and prefixes table names (`LootTable.dbo.t_jeux`), so that detach and restore are never blocked by an open connection.
-- `scripts.dossier`: path of the **Script/** folder (relative to `config.json`, `../Script` by default).
-- `sauvegardes.dossier`: folder of the `.bak` files (`C:\LootTable\Backup`). The file names come from the scripts; the app only checks that they exist before a restore.
+*SQL Server Express ne gère pas la compression des sauvegardes : les fichiers `.bak` sont donc volumineux, d'où les 25 Go requis.*
 
-Host buttons (« Activer l'index », « Restaurer », « Reset ») are hidden: press **Ctrl+Shift+L**, or click the logo 5 times quickly, to show or hide the host panel.
+---
 
-`demo_app/smoke_test.py` plays the whole scenario without the interface and prints the duration of each step. It really runs the scripts (detach, restore, reset): use it only on the demo database, with the app closed (`python demo_app/smoke_test.py`).
+## English
 
-Each step shows the SQL command being executed at the bottom of the screen (« Commande SQL »), so the host can explain it to the visitor. The app queries are in `SQL_AFFICHE` (`main.py`); the host scripts are read from **Script/**. The cause of the outage (`05_incident.sql`) is never displayed.
+### Overview
+Activity for the **ETML Open Days** (project P_BD_141) for visitors with no IT background. In **5 to 8 minutes**, the visitor discovers SQL Server 2022 through a video game shop: they look for a game, give it to a friend, see the effect of an **index** on 10 million rows, then watch a **database failure** and its **restore**.
 
-`demo_app/demo_hors_ligne.html` is a standalone version with no database, to try the activity in any browser. It is generated: after changing `index.html`, `style.css`, `app.js` or `mock_api.js`, run `python demo_app/build_hors_ligne.py`.
+**LootTable** database: `t_jeux` (42 games), `t_joueur` (10,000,000 players), `t_achats` (purchases).
 
-## Archive
-The **archive/** folder keeps files that are no longer used by the current version of the project: the first versions of the creation and data scripts (`create_database_script.txt`, `create_data_loot_table.txt`, replaced by `01_` and `02_`) and the `backup-download/` page (the `LootTable.bak` it downloads is not in the repository). Nothing in the installer or the activity depends on them.
+### Requirements
+- Windows 10 or 11 (64-bit), **administrator** rights
+- **25 GB free** on drive `C:`
+- Internet access during installation (or the SQL Server installer on a USB stick, see below)
+
+### Installation (3 steps)
+1. **Download the project**: *Code → Download ZIP* on GitHub, then extract; or `git clone https://github.com/RedoxCd/SQLServer2022.git`.
+2. **Double-click `installer_prerequis.bat`** (15 to 30 min). It installs everything, even on a fresh Windows:
+   - SQL Server 2022 Express (instance `SQLEXPRESS`, the current Windows account becomes SQL administrator)
+   - SSMS, Python 3.12, ODBC Driver 18, WebView2 and the Python modules
+   - the `C:\LootTable\Data` and `C:\LootTable\Backup` folders, then it tests the connection
+
+   It can safely be run again. **Offline**: put `SQLEXPRADV_x64_FRA.exe` (or `SQLEXPR_x64_ENU.exe`) next to the script or in an `Installeurs\` folder.
+3. **Double-click `lancer_installateur.bat`**, then **"Créer la base"** (5 to 10 min). Wait for **"Prêt pour l'activité"**.
+
+Then start the activity with **`lancer_activite.bat`**.
+
+### How the activity works
+| Step | What happens |
+|---|---|
+| 1 | The visitor looks for a game (small table, instant answer) |
+| 2 | They give it to a friend: player and purchase are added in one **transaction** |
+| 3 | They search for their friend among 10 million players **without an index**: slow, time displayed |
+| 4 | The host clicks **"Activer l'index"** (a differential backup runs in the background) |
+| 5 | Same search **with the index**: almost instant, both times are compared |
+| 6 | The visitor confirms: a **failure** happens (the database disappears) |
+| 7 | The host clicks **"Restaurer"**: full → differential → log backups |
+| 8 | Reveal: the purchase and the friend are back, no data lost |
+| 9 | The host clicks **"Reset"** for the next visitor (1 to 2 min) |
+
+The SQL command being executed is shown at the bottom of the screen so the host can explain it.
+
+### For the host
+- **Ctrl+Shift+L** (or 5 quick clicks on the logo) shows or hides the host buttons.
+- Click **"Reset"** after each visitor.
+- `demo_app/demo_hors_ligne.html`: demo version without a database, opens in any browser.
+
+### Troubleshooting
+| Problem | Solution |
+|---|---|
+| "Base introuvable" when starting the activity | Run `lancer_installateur.bat` first |
+| SQL Server unreachable | Check the server name (`localhost\SQLEXPRESS`) in `installer_app/config.json` and `demo_app/config.json`, or restart the PC |
+| SQL Server installation fails | Check `C:\Program Files\Microsoft SQL Server\160\Setup Bootstrap\Log\Summary.txt` |
+| The activity window does not open | Run `installer_prerequis.bat` again (WebView2) |
+
+### Repository content
+| Folder / file | Purpose |
+|---|---|
+| `installer_prerequis.bat` | Installs the whole computer |
+| `lancer_installateur.bat` / `installer_app/` | Creates the database and the backups |
+| `lancer_activite.bat` / `demo_app/` | The activity for visitors |
+| `Script/` | SQL scripts of the activity (`01` to `08`), read directly by the apps |
+| `Modelisation/LootTable.loo` | Conceptual and logical data models (Merise), open with Looping |
+
+*SQL Server Express does not support backup compression: `.bak` files are large, hence the 25 GB requirement.*
