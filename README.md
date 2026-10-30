@@ -20,10 +20,10 @@ Base **LootTable** : `t_jeux` (42 jeux), `t_joueur` (10 000 000 joueurs), `t_ach
 1. **Télécharger le projet** : bouton *Code → Download ZIP* sur GitHub, puis extraire ; ou `git clone https://github.com/RedoxCd/SQLServer2022.git`.
 2. **Double-cliquer sur `installer_prerequis.bat`** (15 à 30 min). Il installe tout, même sur un Windows vierge :
    - SQL Server 2022 Express (instance `SQLEXPRESS`, le compte Windows actuel devient administrateur SQL)
-   - SSMS, Python 3.12, ODBC Driver 18, WebView2 et les modules Python
+   - SSMS 20.2.1 en français, Python 3.12, ODBC Driver 18, WebView2 et les modules Python
    - les dossiers `C:\LootTable\Data` et `C:\LootTable\Backup`, puis il teste la connexion
 
-   Il peut être relancé sans risque. **Sans Internet** : placer `SQLEXPRADV_x64_FRA.exe` (ou `SQLEXPR_x64_ENU.exe`) à côté du script ou dans un dossier `Installeurs\`.
+   Il peut être relancé sans risque. **Sans Internet** : placer `SQLEXPRADV_x64_FRA.exe` (ou `SQLEXPR_x64_ENU.exe`) et `SSMS-Setup-FRA.exe` à côté du script ou dans un dossier `Installeurs\`.
 3. **Double-cliquer sur `lancer_installateur.bat`**, puis sur **« Créer la base »** (5 à 10 min). Attendre le message **« Prêt pour l'activité »**.
 
 Ensuite, l'activité se lance avec **`lancer_activite.bat`**.
@@ -85,10 +85,10 @@ Activity for the **ETML Open Days** (project P_BD_141) for visitors with no IT b
 1. **Download the project**: *Code → Download ZIP* on GitHub, then extract; or `git clone https://github.com/RedoxCd/SQLServer2022.git`.
 2. **Double-click `installer_prerequis.bat`** (15 to 30 min). It installs everything, even on a fresh Windows:
    - SQL Server 2022 Express (instance `SQLEXPRESS`, the current Windows account becomes SQL administrator)
-   - SSMS, Python 3.12, ODBC Driver 18, WebView2 and the Python modules
+   - SSMS 20.2.1 (French), Python 3.12, ODBC Driver 18, WebView2 and the Python modules
    - the `C:\LootTable\Data` and `C:\LootTable\Backup` folders, then it tests the connection
 
-   It can safely be run again. **Offline**: put `SQLEXPRADV_x64_FRA.exe` (or `SQLEXPR_x64_ENU.exe`) next to the script or in an `Installeurs\` folder.
+   It can safely be run again. **Offline**: put `SQLEXPRADV_x64_FRA.exe` (or `SQLEXPR_x64_ENU.exe`) and `SSMS-Setup-FRA.exe` next to the script or in an `Installeurs\` folder.
 3. **Double-click `lancer_installateur.bat`**, then **"Créer la base"** (5 to 10 min). Wait for **"Prêt pour l'activité"**.
 
 Then start the activity with **`lancer_activite.bat`**.

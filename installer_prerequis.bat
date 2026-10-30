@@ -18,7 +18,7 @@ set "COMPTE_ADMIN=%USERDOMAIN%\%USERNAME%"
 
 echo ============================================================
 echo  LootTable - installation complete du poste
-echo  SQL Server 2022 Express, SSMS, Python 3.12, ODBC 18, WebView2
+echo  SQL Server 2022 Express, SSMS 20 FR, Python 3.12, ODBC 18, WebView2
 echo ============================================================
 echo.
 echo Duree estimee : 15 a 30 minutes selon la connexion Internet.
@@ -28,7 +28,9 @@ echo.
 rem ===== Reglages =====
 set "INSTANCE=SQLEXPRESS"
 set "URL_SQLEXPRESS=https://download.microsoft.com/download/29654887-7cde-4397-bba3-d7f087970845/SQL2022-SSEI-Expr.exe"
-set "URL_SSMS=https://aka.ms/ssms/22/release/vs_SSMS.exe"
+rem SSMS 20.2.1 en francais (clcid=0x40c = francais)
+set "URL_SSMS=https://go.microsoft.com/fwlink/?linkid=2313753&clcid=0x40c"
+set "PAGE_SSMS=https://learn.microsoft.com/fr-fr/ssms/release-history"
 set "URL_PYTHON=https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe"
 set "URL_ODBC=https://go.microsoft.com/fwlink/?linkid=2378279"
 set "URL_WEBVIEW2=https://go.microsoft.com/fwlink/p/?LinkId=2124703"
@@ -128,30 +130,34 @@ icacls "C:\LootTable" /grant "*S-1-5-32-545:(OI)(CI)M" /Q >nul 2>&1
 echo       Dossiers C:\LootTable\Data et C:\LootTable\Backup prets.
 
 
-rem ================= 2/7 SSMS =================
+rem ================= 2/7 SSMS 20.2.1 en francais =================
 call :has_ssms
 if defined SSMS_OK (
-    echo [2/7] SSMS est deja installe.
+    echo [2/7] SSMS 20 est deja installe.
     goto python
 )
-echo [2/7] Installation de SQL Server Management Studio, 10 a 20 minutes...
-echo       SSMS telecharge environ 1 a 2 Go en arriere-plan, SANS barre de progression.
+echo [2/7] Installation de SQL Server Management Studio 20.2.1 en francais, 5 a 15 minutes...
 echo       Il est normal que rien ne bouge a l'ecran : ne fermez pas la fenetre.
-echo       Pour verifier que ca avance : Gestionnaire des taches, processus
-echo       "Visual Studio Installer" avec de l'activite reseau ou disque.
-if defined HAVE_WINGET winget install --id Microsoft.SQLServerManagementStudio.22 %WINGET_OPTS%
-call :has_ssms
-if defined SSMS_OK goto python
 
-echo       winget n'a pas pu installer SSMS : telechargement direct depuis Microsoft...
-call :download "%URL_SSMS%" "%DL%\vs_SSMS.exe" || goto ssms_warn
-"%DL%\vs_SSMS.exe" --quiet --wait --norestart
+rem Installeur deja present a cote du script, par ex. sur une cle USB ?
+set "SSMSPKG="
+for %%F in ("%~dp0SSMS-Setup-FRA.exe" "%~dp0Installeurs\SSMS-Setup-FRA.exe") do if not defined SSMSPKG if exist "%%~fF" set "SSMSPKG=%%~fF"
+if defined SSMSPKG goto ssms_installer
+
+echo       Telechargement de SSMS 20.2.1 FR depuis Microsoft, environ 500 Mo...
+call :download "%URL_SSMS%" "%DL%\SSMS-Setup-FRA.exe" || goto ssms_warn
+set "SSMSPKG=%DL%\SSMS-Setup-FRA.exe"
+
+:ssms_installer
+"%SSMSPKG%" /install /quiet /norestart
+if "%errorlevel%"=="3010" set "REDEMARRAGE=1"
 call :has_ssms
 if defined SSMS_OK goto python
 
 :ssms_warn
-echo       ATTENTION : SSMS n'est pas detecte. L'activite fonctionne sans,
-echo       mais pour l'installer a la main : %URL_SSMS%
+echo       ATTENTION : SSMS 20 n'est pas detecte. L'activite fonctionne sans.
+echo       Pour l'installer a la main : version 20.2.1, langue francais, sur
+echo       %PAGE_SSMS%
 
 
 rem ================= 3/7 Python 3.12 =================
@@ -286,10 +292,9 @@ if defined SQL_OK sc query "MSSQL$%INSTANCE%" >nul 2>&1 || set "SQL_OK="
 exit /b 0
 
 :has_ssms
+rem On veut SSMS 20, la version du cours, en francais
 set "SSMS_OK="
-for /d %%D in ("%ProgramFiles%\Microsoft SQL Server Management Studio*") do if exist "%%~fD\Release\Common7\IDE\SSMS.exe" set "SSMS_OK=1"
-for /d %%D in ("%ProgramFiles%\Microsoft SQL Server Management Studio*") do if exist "%%~fD\Common7\IDE\Ssms.exe" set "SSMS_OK=1"
-for /d %%D in ("%ProgramFiles(x86)%\Microsoft SQL Server Management Studio*") do if exist "%%~fD\Common7\IDE\Ssms.exe" set "SSMS_OK=1"
+if exist "%ProgramFiles(x86)%\Microsoft SQL Server Management Studio 20\Common7\IDE\Ssms.exe" set "SSMS_OK=1"
 exit /b 0
 
 :find_python
