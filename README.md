@@ -21,7 +21,8 @@ Les sauvegardes ne sont **pas compressées** (SQL Server Express ne supporte pas
 
 ## Sur un autre PC (Sébeillon)
 1. Cloner le dépôt : `git clone https://github.com/RedoxCd/SQLServer2022.git`
-2. Double-cliquer sur **`installer_prerequis.bat`** : il installe (via `winget`, ou par téléchargement direct si `winget` est absent ou échoue) Python 3.12, l'**ODBC Driver 18 for SQL Server**, WebView2 si besoin, puis les modules Python (`pywebview`, `pyodbc`). Il demande les droits administrateur ; il peut être relancé sans risque.
+2. Double-cliquer sur **`installer_prerequis.bat`** : il installe tout le poste, **même sur un Windows vierge** (via `winget`, ou par téléchargement direct si `winget` est absent ou échoue) : **SQL Server 2022 Express** (instance `SQLEXPRESS`, le compte Windows qui lance le script devient administrateur SQL), **SSMS**, Python 3.12, l'**ODBC Driver 18 for SQL Server**, WebView2, puis les modules Python (`pywebview`, `pyodbc`). Il crée aussi `C:\LootTable\Data` et `C:\LootTable\Backup` avec les droits du service SQL Server, puis teste la connexion. Compter 15 à 30 minutes. Il demande les droits administrateur ; il peut être relancé sans risque.
+   - **Sans Internet** (ou réseau lent) : copier `SQLEXPRADV_x64_FRA.exe` (ou `SQLEXPR_x64_ENU.exe`) à côté du script ou dans un dossier `Installeurs\` : il sera utilisé au lieu du téléchargement.
 3. Vérifier le nom du serveur dans `installer_app/config.json` et `demo_app/config.json` (par défaut `localhost\SQLEXPRESS`).
 4. Lancer `lancer_installateur.bat` : **25 Go libres** sont requis sur le disque. Puis `lancer_activite.bat`.
 

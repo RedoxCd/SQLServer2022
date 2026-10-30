@@ -1,25 +1,39 @@
 @echo off
 setlocal EnableExtensions
 cd /d "%~dp0"
-title LootTable - Installation des prerequis
+title LootTable - Installation du poste
 
-rem ===== Droits administrateur (necessaires pour Python et le pilote ODBC) =====
+rem ===== Droits administrateur =====
+rem On transmet le compte Windows de la personne qui lance le script, pour le
+rem rendre administrateur de SQL Server (l'activite se connecte avec ce compte).
 net session >nul 2>&1
 if errorlevel 1 (
     echo Demande des droits administrateur...
-    powershell -NoProfile -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
+    powershell -NoProfile -Command "Start-Process -FilePath '%~f0' -ArgumentList '%USERDOMAIN%\%USERNAME%' -Verb RunAs"
     exit /b
 )
+set "COMPTE_UTILISATEUR=%~1"
+if not defined COMPTE_UTILISATEUR set "COMPTE_UTILISATEUR=%USERDOMAIN%\%USERNAME%"
+set "COMPTE_ADMIN=%USERDOMAIN%\%USERNAME%"
 
 echo ============================================================
-echo  LootTable - installation de Python 3.12 et du pilote ODBC 18
+echo  LootTable - installation complete du poste
+echo  SQL Server 2022 Express, SSMS, Python 3.12, ODBC 18, WebView2
 echo ============================================================
 echo.
+echo Duree estimee : 15 a 30 minutes selon la connexion Internet.
+echo Ne fermez pas cette fenetre.
+echo.
 
-rem Liens de telechargement direct (utilises si winget est absent ou echoue)
+rem ===== Reglages =====
+set "INSTANCE=SQLEXPRESS"
+set "URL_SQLEXPRESS=https://download.microsoft.com/download/29654887-7cde-4397-bba3-d7f087970845/SQL2022-SSEI-Expr.exe"
+set "URL_SSMS=https://aka.ms/ssms/22/release/vs_SSMS.exe"
 set "URL_PYTHON=https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe"
 set "URL_ODBC=https://go.microsoft.com/fwlink/?linkid=2378279"
 set "URL_WEBVIEW2=https://go.microsoft.com/fwlink/p/?LinkId=2124703"
+set "DOSSIER_DONNEES=C:\LootTable\Data"
+set "DOSSIER_SAUVEGARDES=C:\LootTable\Backup"
 set "DL=%TEMP%\LootTable_prerequis"
 if not exist "%DL%" mkdir "%DL%"
 
@@ -28,16 +42,113 @@ rem On force la source "winget" : la source "msstore" plante souvent sur
 rem un poste neuf ou un reseau d'ecole (erreur de certificat 0x8a15005e).
 set "HAVE_WINGET="
 where winget >nul 2>&1 && set "HAVE_WINGET=1"
-if not defined HAVE_WINGET echo winget introuvable : les prerequis seront telecharges directement.
+if not defined HAVE_WINGET echo winget introuvable : les logiciels seront telecharges directement.
 set "WINGET_OPTS=-e --source winget --silent --accept-package-agreements --accept-source-agreements"
 
-rem ================= 1/4 Python 3.12 =================
+
+rem ================= 1/7 SQL Server 2022 Express =================
+call :has_sql
+if defined SQL_OK (
+    echo [1/7] SQL Server 2022 Express - instance %INSTANCE% deja installee.
+    goto sql_dossiers
+)
+echo [1/7] Installation de SQL Server 2022 Express - instance %INSTANCE%...
+echo       Cette etape est la plus longue, 10 a 20 minutes.
+
+rem a) Un installeur complet est-il deja a cote du script, par ex. sur une cle USB ?
+set "SQLPKG="
+for %%F in ("%~dp0SQLEXPR*.exe" "%~dp0Installeurs\SQLEXPR*.exe") do if not defined SQLPKG set "SQLPKG=%%~fF"
+if defined SQLPKG goto sql_local
+
+rem b) Sinon on telecharge le petit lanceur Microsoft, qui telecharge le paquet complet
+echo       Telechargement de SQL Server 2022 Express depuis Microsoft...
+call :download "%URL_SQLEXPRESS%" "%DL%\SQL2022-SSEI-Expr.exe" || goto sql_fail
+if exist "%DL%\SQLMedia" rmdir /s /q "%DL%\SQLMedia"
+"%DL%\SQL2022-SSEI-Expr.exe" /ACTION=Download /MEDIAPATH="%DL%\SQLMedia" /MEDIATYPE=Core /QUIET /IACCEPTSQLSERVERLICENSETERMS
+for /r "%DL%\SQLMedia" %%F in (SQLEXPR*.exe) do if not defined SQLPKG set "SQLPKG=%%~fF"
+if defined SQLPKG goto sql_extraire
+
+rem c) Dernier recours : le lanceur installe lui-meme l'instance par defaut SQLEXPRESS
+echo       Telechargement du paquet impossible : installation directe par le lanceur...
+"%DL%\SQL2022-SSEI-Expr.exe" /ACTION=Install /QUIET /IACCEPTSQLSERVERLICENSETERMS /ENU /INSTALLPATH="%ProgramFiles%\Microsoft SQL Server"
+set "SQL_CODE=%errorlevel%"
+if "%SQL_CODE%"=="3010" set "REDEMARRAGE=1"
+call :has_sql
+if defined SQL_OK goto sql_dossiers
+goto sql_fail
+
+:sql_local
+echo       Installeur local trouve : %SQLPKG%
+
+:sql_extraire
+echo       Extraction des fichiers d'installation...
+if exist "%DL%\SQLSetup" rmdir /s /q "%DL%\SQLSetup"
+"%SQLPKG%" /q /x:"%DL%\SQLSetup"
+if not exist "%DL%\SQLSetup\setup.exe" goto sql_fail
+
+rem Un paquet en anglais sur un Windows francais a besoin du parametre /ENU
+set "OPT_LANGUE="
+echo %SQLPKG% | find /i "_ENU" >nul && set "OPT_LANGUE=/ENU"
+
+set "SYSADMINS="%COMPTE_UTILISATEUR%""
+if /i not "%COMPTE_ADMIN%"=="%COMPTE_UTILISATEUR%" set "SYSADMINS="%COMPTE_UTILISATEUR%" "%COMPTE_ADMIN%""
+
+echo       Installation de l'instance %INSTANCE%, administrateur SQL : %COMPTE_UTILISATEUR%
+"%DL%\SQLSetup\setup.exe" /Q /ACTION=Install /FEATURES=SQLEngine /INSTANCENAME=%INSTANCE% /SQLSYSADMINACCOUNTS=%SYSADMINS% /IACCEPTSQLSERVERLICENSETERMS /SUPPRESSPRIVACYSTATEMENTNOTICE /UPDATEENABLED=False %OPT_LANGUE%
+set "SQL_CODE=%errorlevel%"
+if "%SQL_CODE%"=="3010" set "REDEMARRAGE=1"
+call :has_sql
+if defined SQL_OK goto sql_dossiers
+
+:sql_fail
+echo.
+echo ERREUR : SQL Server 2022 Express n'a pas pu etre installe.
+if defined SQL_CODE echo Code de retour de l'installation : %SQL_CODE%
+echo Journal detaille : "%ProgramFiles%\Microsoft SQL Server\160\Setup Bootstrap\Log\Summary.txt"
+echo Solution de secours : copiez SQLEXPRADV_x64_FRA.exe ou SQLEXPR_x64_ENU.exe
+echo a cote de ce script, puis relancez-le.
+pause
+exit /b 1
+
+:sql_dossiers
+rem Le service SQL Server doit pouvoir ecrire la base et les sauvegardes
+if not exist "%DOSSIER_DONNEES%" mkdir "%DOSSIER_DONNEES%"
+if not exist "%DOSSIER_SAUVEGARDES%" mkdir "%DOSSIER_SAUVEGARDES%"
+icacls "C:\LootTable" /grant "NT SERVICE\MSSQL$%INSTANCE%:(OI)(CI)M" /T /Q >nul 2>&1
+icacls "C:\LootTable" /grant "*S-1-5-32-545:(OI)(CI)M" /Q >nul 2>&1
+echo       Dossiers C:\LootTable\Data et C:\LootTable\Backup prets.
+
+
+rem ================= 2/7 SSMS =================
+call :has_ssms
+if defined SSMS_OK (
+    echo [2/7] SSMS est deja installe.
+    goto python
+)
+echo [2/7] Installation de SQL Server Management Studio, 5 a 10 minutes...
+if defined HAVE_WINGET winget install --id Microsoft.SQLServerManagementStudio.22 %WINGET_OPTS%
+call :has_ssms
+if defined SSMS_OK goto python
+
+echo       winget n'a pas pu installer SSMS : telechargement direct depuis Microsoft...
+call :download "%URL_SSMS%" "%DL%\vs_SSMS.exe" || goto ssms_warn
+"%DL%\vs_SSMS.exe" --quiet --wait --norestart
+call :has_ssms
+if defined SSMS_OK goto python
+
+:ssms_warn
+echo       ATTENTION : SSMS n'est pas detecte. L'activite fonctionne sans,
+echo       mais pour l'installer a la main : %URL_SSMS%
+
+
+rem ================= 3/7 Python 3.12 =================
+:python
 call :find_python
 if defined PYEXE (
-    echo [1/4] Python est deja installe.
+    echo [3/7] Python est deja installe.
     goto odbc
 )
-echo [1/4] Installation de Python 3.12...
+echo [3/7] Installation de Python 3.12...
 if defined HAVE_WINGET winget install --id Python.Python.3.12 --scope machine %WINGET_OPTS%
 call :find_python
 if defined PYEXE goto python_ok
@@ -52,21 +163,22 @@ if defined PYEXE goto python_ok
 echo.
 echo ERREUR : Python 3.12 n'a pas pu etre installe.
 echo Installez-le a la main depuis %URL_PYTHON%
-echo (cochez "Add python.exe to PATH"), puis relancez ce script.
+echo en cochant "Add python.exe to PATH", puis relancez ce script.
 pause
 exit /b 1
 
 :python_ok
 echo       Python installe : %PYEXE%
 
-rem ================= 2/4 Pilote ODBC 18 =================
+
+rem ================= 4/7 Pilote ODBC 18 =================
 :odbc
 call :has_odbc
 if defined ODBC_OK (
-    echo [2/4] ODBC Driver 18 est deja installe.
+    echo [4/7] ODBC Driver 18 est deja installe.
     goto webview
 )
-echo [2/4] Installation de ODBC Driver 18 for SQL Server...
+echo [4/7] Installation de ODBC Driver 18 for SQL Server...
 if defined HAVE_WINGET winget install --id Microsoft.msodbcsql.18 %WINGET_OPTS%
 call :has_odbc
 if defined ODBC_OK goto webview
@@ -85,14 +197,15 @@ echo puis relancez ce script.
 pause
 exit /b 1
 
-rem ================= 3/4 WebView2 =================
+
+rem ================= 5/7 WebView2 =================
 :webview
 call :has_webview2
 if defined WV2_OK (
-    echo [3/4] WebView2 est deja installe.
+    echo [5/7] WebView2 est deja installe.
     goto modules
 )
-echo [3/4] Installation de Microsoft Edge WebView2...
+echo [5/7] Installation de Microsoft Edge WebView2...
 if defined HAVE_WINGET winget install --id Microsoft.EdgeWebView2Runtime %WINGET_OPTS%
 call :has_webview2
 if defined WV2_OK goto modules
@@ -107,9 +220,10 @@ if defined WV2_OK goto modules
 echo       ATTENTION : WebView2 n'est pas detecte. Si la fenetre de l'activite
 echo       ne s'ouvre pas, installez-le depuis %URL_WEBVIEW2%
 
-rem ================= 4/4 Modules Python =================
+
+rem ================= 6/7 Modules Python =================
 :modules
-echo [4/4] Installation des modules Python...
+echo [6/7] Installation des modules Python...
 "%PYEXE%" -m pip install --upgrade pip
 "%PYEXE%" -m pip install -r "%~dp0demo_app\requirements.txt"
 if errorlevel 1 (
@@ -119,8 +233,10 @@ if errorlevel 1 (
     exit /b 1
 )
 
+
+rem ================= 7/7 Verification =================
 echo.
-echo ---------------- Verification ----------------
+echo [7/7] ---------------- Verification ----------------
 "%PYEXE%" --version
 "%PYEXE%" -c "import pyodbc, webview; print('Modules OK - pilotes SQL Server :', [d for d in pyodbc.drivers() if 'SQL Server' in d])"
 if errorlevel 1 (
@@ -129,22 +245,48 @@ if errorlevel 1 (
     pause
     exit /b 1
 )
+"%PYEXE%" -c "import pyodbc; c=pyodbc.connect('DRIVER={ODBC Driver 18 for SQL Server};SERVER=localhost\\%INSTANCE%;DATABASE=master;Trusted_Connection=yes;Encrypt=no;TrustServerCertificate=yes', timeout=15); print('Connexion SQL Server OK :', c.cursor().execute('SELECT @@VERSION').fetchone()[0].splitlines()[0])"
+if errorlevel 1 (
+    echo.
+    echo ATTENTION : la connexion a localhost\%INSTANCE% a echoue.
+    echo Redemarrez l'ordinateur puis relancez ce script.
+    pause
+    exit /b 1
+)
 echo.
-echo Termine. Vous pouvez lancer lancer_installateur.bat.
+if defined REDEMARRAGE (
+    echo Termine. SQL Server demande un redemarrage : redemarrez l'ordinateur,
+    echo puis lancez lancer_installateur.bat.
+) else (
+    echo Termine. Vous pouvez lancer lancer_installateur.bat.
+)
 pause
 exit /b 0
 
 
 rem ================= Sous-routines =================
 
+:has_sql
+set "SQL_OK="
+reg query "HKLM\SOFTWARE\Microsoft\Microsoft SQL Server\Instance Names\SQL" /v %INSTANCE% >nul 2>&1 && set "SQL_OK=1"
+if defined SQL_OK sc query "MSSQL$%INSTANCE%" >nul 2>&1 || set "SQL_OK="
+exit /b 0
+
+:has_ssms
+set "SSMS_OK="
+for /d %%D in ("%ProgramFiles%\Microsoft SQL Server Management Studio*") do if exist "%%~fD\Release\Common7\IDE\SSMS.exe" set "SSMS_OK=1"
+for /d %%D in ("%ProgramFiles%\Microsoft SQL Server Management Studio*") do if exist "%%~fD\Common7\IDE\Ssms.exe" set "SSMS_OK=1"
+for /d %%D in ("%ProgramFiles(x86)%\Microsoft SQL Server Management Studio*") do if exist "%%~fD\Common7\IDE\Ssms.exe" set "SSMS_OK=1"
+exit /b 0
+
 :find_python
-rem Cherche d'abord les chemins d'installation connus (le PATH de cette
-rem fenetre n'est pas mis a jour juste apres une installation).
+rem Cherche d'abord les chemins d'installation connus : le PATH de cette
+rem fenetre n'est pas mis a jour juste apres une installation.
 set "PYEXE="
 if exist "%ProgramFiles%\Python312\python.exe" set "PYEXE=%ProgramFiles%\Python312\python.exe"
 if not defined PYEXE if exist "%LocalAppData%\Programs\Python\Python312\python.exe" set "PYEXE=%LocalAppData%\Programs\Python\Python312\python.exe"
 if defined PYEXE exit /b 0
-rem Sinon un Python deja present dans le PATH (le raccourci Microsoft Store echoue ici)
+rem Sinon un Python deja present dans le PATH ; le raccourci Microsoft Store echoue ici
 python -c "import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)" >nul 2>&1 && set "PYEXE=python"
 exit /b 0
 
