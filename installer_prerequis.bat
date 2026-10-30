@@ -112,6 +112,14 @@ pause
 exit /b 1
 
 :sql_dossiers
+rem Services : SQL Server en demarrage automatique, et SQL Server Browser active.
+rem Sans le Browser, "localhost\SQLEXPRESS" echoue avec l'erreur
+rem "Error Locating Server/Instance Specified" (il est desactive par defaut).
+sc config "MSSQL$%INSTANCE%" start= auto >nul 2>&1
+net start "MSSQL$%INSTANCE%" >nul 2>&1
+sc config SQLBrowser start= auto >nul 2>&1
+net start SQLBrowser >nul 2>&1
+echo       Services SQL Server et SQL Server Browser demarres.
 rem Le service SQL Server doit pouvoir ecrire la base et les sauvegardes
 if not exist "%DOSSIER_DONNEES%" mkdir "%DOSSIER_DONNEES%"
 if not exist "%DOSSIER_SAUVEGARDES%" mkdir "%DOSSIER_SAUVEGARDES%"
