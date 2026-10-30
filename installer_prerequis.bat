@@ -22,7 +22,9 @@ echo  SQL Server 2022 Express, SSMS 20 FR, Python 3.12, ODBC 18, WebView2
 echo ============================================================
 echo.
 echo Duree estimee : 15 a 30 minutes selon la connexion Internet.
-echo Ne fermez pas cette fenetre.
+echo Ne fermez pas cette fenetre et NE CLIQUEZ PAS dedans :
+echo un clic met le script en pause, le titre affiche alors "Selection".
+echo Si cela arrive, appuyez sur Echap pour reprendre.
 echo.
 
 rem ===== Reglages =====
@@ -321,7 +323,14 @@ exit /b 0
 
 :download
 rem %1 = URL, %2 = fichier de destination
+rem curl.exe (inclus dans Windows 10/11) affiche une barre de progression ;
+rem PowerShell sert de secours s'il est absent ou echoue.
 if exist "%~2" del /f /q "%~2" >nul 2>&1
+where curl.exe >nul 2>&1 || goto download_ps
+curl.exe -L --fail --retry 3 --progress-bar -o "%~2" "%~1"
+if not errorlevel 1 if exist "%~2" exit /b 0
+if exist "%~2" del /f /q "%~2" >nul 2>&1
+:download_ps
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; try { Invoke-WebRequest -Uri '%~1' -OutFile '%~2' -UseBasicParsing; exit 0 } catch { Write-Host ('      Echec du telechargement : ' + $_.Exception.Message); exit 1 }"
 if not exist "%~2" exit /b 1
 exit /b 0
