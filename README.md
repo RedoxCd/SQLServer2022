@@ -26,17 +26,12 @@ Les sauvegardes ne sont **pas compressées** (SQL Server Express ne supporte pas
 4. Lancer `lancer_installateur.bat` : **25 Go libres** sont requis sur le disque. Puis `lancer_activite.bat`.
 
 ## Script
-Everything lives in the **Script/** folder. Create `C:\LootTable\Backup` (write access for the SQL Server service account) before starting, then run in this order:
+Everything lives in the **Script/** folder. Create `C:\LootTable\Data` and `C:\LootTable\Backup` (write access for the SQL Server service account) before starting, then run in this order:
 
-1. `create_database_script.txt` — creates the LootTable database and its three tables. It has to be executed before any other script or operation.
-2. `create_data_loot_table.txt` — the big script that generates the data (10 million players, the games and a few purchases) at once. It empties the tables and reseeds the IDENTITY columns first, so it can be re-executed.
+1. `01_create_database.sql` — creates the LootTable database and its three tables. It has to be executed before any other script or operation.
+2. `02_generate_data.sql` — generates the data (42 real games and 10 million players) and disables `idx_pseudo`.
 3. `03_golden_backup.sql` — the « GOLDEN » backup (initial state of the demo). Before running it, check that `idx_pseudo` is disabled (`is_disabled = 1`): the demo relies on it.
 4. `07_reset.sql` — restores GOLDEN and creates the FULL backup that starts the FULL / DIFF / LOG chain. The database is then ready for the demo.
-
-`create_database_script.txt` and `create_data_loot_table.txt` are kept as they are. `01_create_database.sql` and `02_generate_data.sql` are an equivalent variant (42 real games, files in `C:\LootTable\Data`) and can replace steps 1 and 2.
-
-### Don't want to generate 10 million rows?
-The backup file can be downloaded instead: open the page in **backup-download/** (`index.html`, it downloads `LootTable.bak`). Rename it `LootTable_GOLDEN.bak`, put it in `C:\LootTable\Backup`, then run `07_reset.sql` (steps 1 to 3 are not needed). Keep a copy on a USB drive.
 
 ### The demo, step by step
 The scripts below are the reference of the demo; the application reads them directly from **Script/** (nothing is copied).
@@ -75,3 +70,6 @@ Host buttons (« Activer l'index », « Restaurer », « Reset ») are hidden: p
 Each step shows the SQL command being executed at the bottom of the screen (« Commande SQL »), so the host can explain it to the visitor. The app queries are in `SQL_AFFICHE` (`main.py`); the host scripts are read from **Script/**. The cause of the outage (`05_incident.sql`) is never displayed.
 
 `demo_app/demo_hors_ligne.html` is a standalone version with no database, to try the activity in any browser. It is generated: after changing `index.html`, `style.css`, `app.js` or `mock_api.js`, run `python demo_app/build_hors_ligne.py`.
+
+## Archive
+The **archive/** folder keeps files that are no longer used by the current version of the project: the first versions of the creation and data scripts (`create_database_script.txt`, `create_data_loot_table.txt`, replaced by `01_` and `02_`) and the `backup-download/` page (the `LootTable.bak` it downloads is not in the repository). Nothing in the installer or the activity depends on them.
